@@ -1,3 +1,10 @@
+/* Copyright (c) 2023, Julia Desmazes. All rights reserved.
+ * 
+ * This work is licensed under the Creative Commons Attribution-NonCommercial
+ * 4.0 International License. 
+ * 
+ * This code is provided "as is" without any express or implied warranties. */ 
+
 module tv_itch5 #(
 	`ifdef MOLD_MSD_IDS
 	parameter SID_W     = 80,
