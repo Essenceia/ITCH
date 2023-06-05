@@ -55,7 +55,7 @@ logic                 data_cnt_en;
 assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b0}}, mold_v_i};
 // reset to 1 when new msg start, can't set to 0 as we are implicity using
 // this counter as a valid signal  
-assign data_cnt_next = mold_start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : data_cnt_next; 
+assign data_cnt_next = mold_start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : data_cnt_add; 
 
 assign data_cnt_en = mold_v_i;
 always @(posedge clk) begin
@@ -96,20 +96,10 @@ always @(posedge clk) begin
 		// xcheck
 		sva_xcheck_data_cnt : assert ( ~$isunknown( data_cnt_q ));
 		for(int unsigned x = 0; x < CNT_MAX; x++ ) begin 
-			 assert( ~data_cnt_q[x] | data_cnt_q[x]	& ~$isunknown( data_q[AXI_DATA_W*x+AXI_DATA_W-1:AXI_DATA_W*x]));
+			 assert( ~(data_cnt_q == x) | ( (data_cnt_q == x ) & ~$isunknown( data_q[AXI_DATA_W*x+AXI_DATA_W-1:AXI_DATA_W*x])));
 		end
 	end
 end
 
-// generate
-generate
-for( i = 0; i < CNT_MAX; i++) begin
-	always @(posedge clk) begin
-		if ( nreset ) begin
-
-		end
-	end
-end
-endgenerate
 `endif
 endmodule
