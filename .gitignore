@@ -1,0 +1,12 @@
+*
+!.gitignore
+!*.v
+!*.vh
+!*.sby
+!*.md
+!*.pdf
+!*.png
+!doc
+!formal
+!tb
+!Makefile
