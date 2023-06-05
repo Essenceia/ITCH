@@ -1,0 +1,22 @@
+--- nasdaq_totalview_itch_old.xml	2023-06-05 14:59:01.430015931 -0700
++++ nasdaq_totalview_itch.xml	2023-06-05 14:59:19.253349302 -0700
+@@ -201,19 +201,6 @@
+     </Enum>
+   </Enums>
+   <Structs>
+-    <Struct name="packet_header" len="20" database="false">
+-      <Field name="session" offset="0" len="10" type="char_10_t"/>
+-      <Field name="sequence_number" offset="10" len="8" type="u64_t"/>
+-      <Field name="message_count" offset="18" len="2" type="u16_t"/>
+-    </Struct>
+-    <Struct name="message_block" len="2" database="false">
+-      <Field name="message_length" offset="0" len="2" type="u16_t"/>
+-    </Struct>
+-    <Struct name="request_packet" len="20" database="false">
+-      <Field name="session" offset="0" len="10" type="char_10_t"/>
+-      <Field name="sequence_number" offset="10" len="8" type="char_8_t"/>
+-      <Field name="requested_message_count" offset="18" len="2" type="u16_t"/>
+-    </Struct>
+     <Struct name="system_event" len="12" id="S" database="true">
+       <Field name="message_type" offset="0" len="1" type="char_t"/>
+       <Field name="stock_locate" offset="1" len="2" type="u16_t"/>

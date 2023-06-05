@@ -6,7 +6,11 @@
 !*.md
 !*.pdf
 !*.png
+!*.py
+!*.xml
+!*.patch
 !doc
 !formal
 !tb
+!gen
 !Makefile

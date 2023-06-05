@@ -22,9 +22,9 @@ smtbmc boolector
 [script]
 nofullskip: read
 noverific: read -noverific
-read -formal top.v
-hierarchy -check -top top
-prep -top top
+read -formal tv_itch5.v
+hierarchy -check -top tv_itch5
+prep -top tv_itch5
 
 [files]
-top.v
+tv_itch5.v

@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<Model basefilename="nasdaq_totalview_itch" generate_test_code="false" guard="VPLAT_NASDAQ_TOTALVIEW_ITCH" idname="TYPE" idtype="char_t" namespace="nasdaq_totalview_itch">
+  <Includes>
+    <Include name="&lt;cstdint&gt;"/>
+    <Include name="&lt;iostream&gt;"/>
+    <Include name="&lt;vpl/CharArray.hpp&gt;"/>
+    <Include name="&lt;byteswap.h&gt;"/>
+  </Includes>
+  <Typedefs>
+    <Typedef name="u8_t" type="std::uint8_t" dbtype="SMALLINT"/>
+    <Typedef name="u16_t" type="std::uint16_t" endian="bswap_16(VAR_NAME)" dbtype="SMALLINT"/>
+    <Typedef name="u32_t" type="std::uint32_t" endian="bswap_32(VAR_NAME)" dbtype="INTEGER"/>
+    <Typedef name="u48_t" type="struct uint48_t { std::uint64_t value:48; } __attribute__((packed))" endian="(bswap_64(VAR_NAME.value) >> 16)" dbtype="BIGINT"/>
+    <Typedef name="u64_t" type="std::uint64_t" endian="bswap_64(VAR_NAME)" dbtype="BIGINT"/>
+    <Typedef name="price_4_t" type="u32_t" endian="bswap_32(VAR_NAME)" dbtype="INTEGER"/>
+    <Typedef name="price_8_t" type="u64_t" endian="bswap_64(VAR_NAME)" dbtype="BIGINT"/>
+    <Typedef name="char_t" type="char" dbtype="CHAR(1)"/>
+    <Typedef name="char_2_t" type="vpl::char_array&lt;2,'\x20'&gt;" dbtype="CHAR(2)"/>
+    <Typedef name="char_4_t" type="vpl::char_array&lt;4,'\x20'&gt;" dbtype="CHAR(4)"/>
+    <Typedef name="char_8_t" type="vpl::char_array&lt;8,'\x20'&gt;" dbtype="CHAR(8)"/>
+    <Typedef name="char_10_t" type="vpl::char_array&lt;10,'\x20'&gt;" dbtype="CHAR(10)"/>
+    <Typedef name="char_20_t" type="vpl::char_array&lt;20,'\x20'&gt;" dbtype="CHAR(20)"/>
+  </Typedefs>
+  <Constants>
+    <Constant name="Price4Scale" type="u32_t" value="10000"/>
+    <Constant name="MaxPrice4" type="u32_t" value="2000000000"/>
+    <Constant name="Price8Scale" type="u64_t" value="100000000"/>
+    <Constant name="MaxPrice8" type="u64_t" value="20000000000000"/>
+  </Constants>
+  <Enums>
+    <Enum name="eSystemEvent" type="char_t" dbtype="CHAR(1)">
+      <Value name="Start_of_Messages" value="O"/>
+      <Value name="Start_of_System_hours" value="S"/>
+      <Value name="Start_of_Market_hours" value="Q"/>
+      <Value name="End_of_Market_hours" value="M"/>
+      <Value name="End_of_System_hours" value="E"/>
+      <Value name="End_of_Messages" value="C"/>
+    </Enum>
+    <Enum name="eMarketCategory" type="char_t" dbtype="CHAR(1)">
+      <Value name="Nasdaq_Global_Select_MarketSM" value="Q"/>
+      <Value name="Nasdaq_Global_MarketSM" value="G"/>
+      <Value name="Nasdaq_Capital_Market" value="S"/>
+      <Value name="New_York_Stock_Exchange" value="N"/>
+      <Value name="NYSE_MKT" value="A"/>
+      <Value name="NYSE_Arca" value="P"/>
+      <Value name="BATS_Z_Exchange" value="Z"/>
+      <Value name="Investors_Exchange_LLC" value="V"/>
+      <Value name="Not_available" value=" "/>
+    </Enum>
+    <Enum name="eFinancialStatusIndicator" type="char_t" dbtype="CHAR(1)">
+      <Value name="Deficient" value="D" />
+      <Value name="Delinquent" value="E" />
+      <Value name="Bankrupt" value="Q" />
+      <Value name="Suspended" value="S" />
+      <Value name="Deficient_and_Bankrupt" value="G" />
+      <Value name="Deficient_and_Delinquent" value="H" />
+      <Value name="Delinquent_and_Bankrupt" value="J" />
+      <Value name="Deficient_Delinquent_and_Bankrupt" value="K" />
+      <Value name="Creations_and_or_Redemptions_Suspended" value="C" />
+      <Value name="Normal" value="N" />
+      <Value name="Not_available" value=" " />
+    </Enum>
+    <Enum name="eRoundLotsOnly" type="char_t" dbtype="CHAR(1)">
+      <Value name="Round_Lots_Only" value="Y" />
+      <Value name="Accepts_Round_Lots" value="N" />
+    </Enum>
+    <Enum name="eAuthenticity" type="char_t" dbtype="CHAR(1)">
+      <Value name="Production" value="P" />
+      <Value name="Test" value="T" />
+    </Enum>
+    <Enum name="eShortSaleThresholdIndicator" type="char_t" dbtype="CHAR(1)">
+      <Value name="Restricted" value="Y" />
+      <Value name="Not_Restricted" value="N" />
+      <Value name="Not_available" value=" " />
+    </Enum>
+    <Enum name="eIPOFlag" type="char_t" dbtype="CHAR(1)">
+      <Value name="New_IPO_Security" value="Y" />
+      <Value name="Not_A_New_IPO_Security" value="N" />
+      <Value name="Not_available" value=" " />
+    </Enum>
+    <Enum name="eLULDReferencePriceTier" type="char_t" dbtype="CHAR(1)">
+      <Value name="Tier_1_NMS_Stocks_and_select_ETPs" value="1" />
+      <Value name="Tier_2_NMSStocks" value="2" />
+      <Value name="Not_available" value=" " />
+    </Enum>
+    <Enum name="eETPFlag" type="char_t" dbtype="CHAR(1)">
+      <Value name="Instrument_is_an_ETP" value="Y" />
+      <Value name="Instrument_is_not_an_ETP" value="N" />
+      <Value name="Not_available" value=" " />
+    </Enum>
+    <Enum name="eInverseIndicator" type="char_t" dbtype="CHAR(1)">
+      <Value name="ETP_is_an_Inverse_ETP" value="Y" />
+      <Value name="ETP_is_not_an_Inverse_ETP" value="N" />
+    </Enum>
+    <Enum name="eTradingState" type="char_t" dbtype="CHAR(1)">
+      <Value name="Halted" value="H" />
+      <Value name="Paused" value="P" />
+      <Value name="Quotation_only" value="Q" />
+      <Value name="Trading" value="T" />
+    </Enum>
+    <Enum name="eRegSHOAction" type="char_t" dbtype="CHAR(1)">
+      <Value name="No_price_test_in_place" value="0" />
+      <Value name="Reg_SHO_Short_Sale_Price_Test_Restriction_in_effect" value="1" />
+      <Value name="Reg_SHO_Short_Sale_Price_Test_Restriction_remains_in_effect" value="2" />
+    </Enum>
+    <Enum name="ePrimaryMarketMaker" type="char_t" dbtype="CHAR(1)">
+      <Value name="primary_market_maker" value="Y" />
+      <Value name="non_primary_market_maker" value="N" />
+    </Enum>
+    <Enum name="eMarketMakerMode" type="char_t" dbtype="CHAR(1)">
+      <Value name="normal" value="N" />
+      <Value name="passive" value="P" />
+      <Value name="syndicate" value="S" />
+      <Value name="pre_syndicate" value="R" />
+      <Value name="penalty" value="L" />
+    </Enum>
+    <Enum name="eMarketParticipantState" type="char_t" dbtype="CHAR(1)">
+      <Value name="Active" value="A" />
+      <Value name="Excused_Withdrawn" value="E" />
+      <Value name="Withdrawn" value="W" />
+      <Value name="Suspended" value="S" />
+      <Value name="Deleted" value="D" />
+    </Enum>
+    <Enum name="eBreachedLevel" type="char_t" dbtype="CHAR(1)">
+      <Value name="Level_1" value="1" />
+      <Value name="Level_2" value="2" />
+      <Value name="Level_3" value="3" />
+    </Enum>
+    <Enum name="eIPOQuotationReleaseQualifier" type="char_t" dbtype="CHAR(1)">
+      <Value name="Anticipated_Quotation_Release_Time" value="A" />
+      <Value name="IPO_Release_Canceled_Postponed" value="C" />
+    </Enum>
+    <Enum name="eMarketCode" type="char_t" dbtype="CHAR(1)">
+      <Value name="Nasdaq" value="Q" />
+      <Value name="BX" value="B" />
+      <Value name="PSX" value="X" />
+    </Enum>
+    <Enum name="eOperationalHaltAction" type="char_t" dbtype="CHAR(1)">
+      <Value name="Halted" value="H" />
+      <Value name="Trading" value="T" />
+    </Enum>
+    <Enum name="eBuySellIndicator" type="char_t" dbtype="CHAR(1)">
+      <Value name="Buy_Order" value="B" />
+      <Value name="Sell_Order" value="S" />
+    </Enum>
+    <Enum name="ePrintable" type="char_t" dbtype="CHAR(1)">
+      <Value name="Non_Printable" value="N" />
+      <Value name="Printable" value="Y" />
+    </Enum>
+    <Enum name="eCrossType" type="char_t" dbtype="CHAR(1)">
+      <Value name="Nasdaq_Opening_Cross" value="O" />
+      <Value name="Nasdaq_Closing_Cross" value="C" />
+      <Value name="Cross_for_IPO_and_halted_paused_securities" value="H" />
+      <Value name="Nasdaq_Cross_Network_Intraday_Cross_and_Post_Close_Cross" value="I" />
+    </Enum>
+    <Enum name="eImbalanceDirection" type="char_t" dbtype="CHAR(1)">
+      <Value name="buy_imbalance" value="B" />
+      <Value name="sell_imbalance" value="S" />
+      <Value name="no_imbalance" value="N" />
+      <Value name="Insufficient_orders_to_calculate" value="O" />
+    </Enum>
+    <Enum name="ePriceVariationIndicator" type="char_t" dbtype="CHAR(1)">
+      <Value name="less_than_1_pct" value="L" />
+      <Value name="deviation_1_to_2_pct" value="1" />
+      <Value name="deviation_2_to_3_pct" value="2" />
+      <Value name="deviation_3_to_4_pct" value="3" />
+      <Value name="deviation_4_to_5_pct" value="4" />
+      <Value name="deviation_5_to_6_pct" value="5" />
+      <Value name="deviation_6_to_7_pct" value="6" />
+      <Value name="deviation_7_to_8_pct" value="7" />
+      <Value name="deviation_8_to_9_pct" value="8" />
+      <Value name="deviation_9_to_10_pct" value="9" />
+      <Value name="deviation_10_to_20_pct" value="A" />
+      <Value name="deviation_20_to_30_pct" value="B" />
+      <Value name="deviation_30_pct_or_greater" value="C" />
+      <Value name="Cannot_be_calculated" value=" " />
+    </Enum>
+    <Enum name="eInterestFlag" type="char_t" dbtype="CHAR(1)">
+      <Value name="RPI_orders_available_on_the_buy_side" value="B" />
+      <Value name="RPI_orders_available_on_the_sell_side" value="S" />
+      <Value name="RPI_orders_available_on_both_sides" value="A" />
+      <Value name="No_RPI_orders_available" value="N" />
+    </Enum>
+    <Enum name="eIssueClassification" type="char_t" dbtype="CHAR(1)">
+      <Value name="American_Depositary_Share" value="A" />
+      <Value name="Bond" value="B" />
+      <Value name="Common_Stock" value="C" />
+      <Value name="Depository_Receipt" value="F" />
+      <Value name="Rule_144A" value="I" />
+      <Value name="Limited_Partnership" value="L" />
+      <Value name="Notes" value="N" />
+      <Value name="Ordinary_Share" value="O" />
+      <Value name="Preferred_Stock" value="P" />
+      <Value name="Other_Securities" value="Q" />
+      <Value name="Right" value="R" />
+      <Value name="Shares_of_Beneficial_Interest" value="S" />
+      <Value name="Convertible_Debenture" value="T" />
+      <Value name="Unit" value="U" />
+      <Value name="Units_Benif_Int" value="V" />
+      <Value name="Warrant" value="W" />
+    </Enum>
+  </Enums>
+  <Structs>
+    <Struct name="system_event" len="12" id="S" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="event_code" offset="11" len="1" type="eSystemEvent"/>
+    </Struct>
+    <Struct name="stock_directory" len="39" id="R" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="market_category" offset="19" len="1" type="eMarketCategory"/>
+      <Field name="financial_status_indicator" offset="20" len="1" type="eFinancialStatusIndicator"/>
+      <Field name="round_lot_size" offset="21" len="4" type="u32_t"/>
+      <Field name="round_lots_only" offset="25" len="1" type="eRoundLotsOnly"/>
+      <Field name="issue_classification" offset="26" len="1" type="eIssueClassification"/>
+      <Field name="issue_sub_type" offset="27" len="2" type="char_2_t"/>
+      <Field name="authenticity" offset="29" len="1" type="eAuthenticity"/>
+      <Field name="short_sale_threshold_indicator" offset="30" len="1" type="eShortSaleThresholdIndicator"/>
+      <Field name="ipo_flag" offset="31" len="1" type="eIPOFlag"/>
+      <Field name="luld_reference_price_tier" offset="32" len="1" type="eLULDReferencePriceTier"/>
+      <Field name="etp_flag" offset="33" len="1" type="eETPFlag" />
+      <Field name="etp_leverage_factor" offset="34" len="4" type="u32_t"/>
+      <Field name="inverse_indicator" offset="38" len="1" type="eInverseIndicator"/>
+    </Struct>
+    <Struct name="stock_trading_action" len="25" id="H" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="trading_state" offset="19" len="1" type="eTradingState"/>
+      <Field name="reserved" offset="20" len="1" type="char_t"/>
+      <Field name="reason" offset="21" len="4" type="char_4_t"/>
+    </Struct>
+    <Struct name="reg_sho_restriction" len="20" id="Y" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="reg_sho_action" offset="19" len="1" type="eRegSHOAction"/>
+    </Struct>
+    <Struct name="market_participant_position" len="26" id="L" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="mpid" offset="11" len="4" type="char_4_t"/>
+      <Field name="stock" offset="15" len="8" type="char_8_t"/>
+      <Field name="primary_market_maker" offset="23" len="1" type="ePrimaryMarketMaker"/>
+      <Field name="market_maker_mode" offset="24" len="1" type="eMarketMakerMode"/>
+      <Field name="market_participant_state" offset="25" len="1" type="eMarketParticipantState"/>
+    </Struct>
+    <Struct name="mwcb_decline_level" len="35" id="V" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="level_1" offset="11" len="8" type="price_8_t"/>
+      <Field name="level_2" offset="19" len="8" type="price_8_t"/>
+      <Field name="level_3" offset="27" len="8" type="price_8_t"/>
+    </Struct>
+    <Struct name="mwcb_status" len="12" id="W" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="breached_level" offset="11" len="1" type="eBreachedLevel"/>
+    </Struct>
+    <Struct name="ipo_quoting_period_update" len="28" id="K" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="ipo_quotation_release_time" offset="19" len="4" type="u32_t"/>
+      <Field name="ipo_quotation_release_qualifier" offset="23" len="1" type="eIPOQuotationReleaseQualifier"/>
+      <Field name="ipo_price" offset="24" len="4" type="price_4_t"/>
+    </Struct>
+    <Struct name="luld_auction_collar" len="35" id="J" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="auction_collar_reference_price" offset="19" len="4" type="price_4_t"/>
+      <Field name="upper_auction_collar_price" offset="23" len="4" type="price_4_t"/>
+      <Field name="lower_auction_collar_price" offset="27" len="4" type="price_4_t"/>
+      <Field name="auction_collar_extension" offset="31" len="4" type="u32_t"/>
+    </Struct>
+    <Struct name="operational_halt" len="21" id="h" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="market_code" offset="19" len="1" type="eMarketCode"/>
+      <Field name="operational_halt_action" offset="20" len="1" type="eOperationalHaltAction"/>
+    </Struct>
+    <Struct name="add_order" len="36" id="A" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="buy_sell_indicator" offset="19" len="1" type="eBuySellIndicator"/>
+      <Field name="shares" offset="20" len="4" type="u32_t"/>
+      <Field name="stock" offset="24" len="8" type="char_8_t"/>
+      <Field name="price" offset="32" len="4" type="price_4_t"/>
+    </Struct>
+    <Struct name="add_order_with_mpid" len="40" id="F" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="buy_sell_indicator" offset="19" len="1" type="eBuySellIndicator"/>
+      <Field name="shares" offset="20" len="4" type="u32_t"/>
+      <Field name="stock" offset="24" len="8" type="char_8_t"/>
+      <Field name="price" offset="32" len="4" type="price_4_t"/>
+      <Field name="attribution" offset="36" len="4" type="char_4_t"/>
+    </Struct>
+    <Struct name="order_executed" len="31" id="E" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="executed_shares" offset="19" len="4" type="u32_t"/>
+      <Field name="match_number" offset="23" len="8" type="u64_t"/>
+    </Struct>
+    <Struct name="order_executed_with_price" len="36" id="C" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="executed_shares" offset="19" len="4" type="u32_t"/>
+      <Field name="match_number" offset="23" len="8" type="u64_t"/>
+      <Field name="printable" offset="31" len="1" type="ePrintable"/>
+      <Field name="execution_price" offset="32" len="4" type="price_4_t"/>
+    </Struct>
+    <Struct name="order_cancel" len="23" id="X" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="cancelled_shares" offset="19" len="4" type="u32_t"/>
+    </Struct>
+    <Struct name="order_delete" len="19" id="D" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+    </Struct>
+    <Struct name="order_replace" len="35" id="U" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="original_order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="new_order_reference_number" offset="19" len="8" type="u64_t"/>
+      <Field name="shares" offset="27" len="4" type="u32_t"/>
+      <Field name="price" offset="31" len="4" type="price_4_t"/>
+    </Struct>
+    <Struct name="trade" len="44" id="P" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="order_reference_number" offset="11" len="8" type="u64_t"/>
+      <Field name="buy_sell_indicator" offset="19" len="1" type="eBuySellIndicator"/>
+      <Field name="shares" offset="20" len="4" type="u32_t"/>
+      <Field name="stock" offset="24" len="8" type="char_8_t"/>
+      <Field name="price" offset="32" len="4" type="price_4_t"/>
+      <Field name="match_number" offset="36" len="8" type="u64_t"/>
+    </Struct>
+    <Struct name="cross_trade" len="40" id="Q" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="shares" offset="11" len="8" type="u64_t"/>
+      <Field name="stock" offset="19" len="8" type="char_8_t"/>
+      <Field name="cross_price" offset="27" len="4" type="price_4_t"/>
+      <Field name="match_number" offset="31" len="8" type="u64_t"/>
+      <Field name="cross_type" offset="39" len="1" type="eCrossType"/>
+    </Struct>
+    <Struct name="broken_trade" len="19" id="B" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="match_number" offset="11" len="8" type="u64_t"/>
+    </Struct>
+    <Struct name="net_order_imbalance_indicator" len="50" id="I" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="paired_shares" offset="11" len="8" type="u64_t"/>
+      <Field name="imbalance_shares" offset="19" len="8" type="u64_t"/>
+      <Field name="imbalance_direction" offset="27" len="1" type="eImbalanceDirection"/>
+      <Field name="stock" offset="28" len="8" type="char_8_t"/>
+      <Field name="far_price" offset="36" len="4" type="price_4_t"/>
+      <Field name="near_price" offset="40" len="4" type="price_4_t"/>
+      <Field name="current_reference_price" offset="44" len="4" type="price_4_t"/>
+      <Field name="cross_type" offset="48" len="1" type="eCrossType"/>
+      <Field name="price_variation_indicator" offset="49" len="1" type="ePriceVariationIndicator"/>
+    </Struct>
+    <Struct name="retail_price_improvement_indicator" len="20" id="N" database="true">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="stock_locate" offset="1" len="2" type="u16_t"/>
+      <Field name="tracking_number" offset="3" len="2" type="u16_t"/>
+      <Field name="timestamp" offset="5" len="6" type="u48_t"/>
+      <Field name="stock" offset="11" len="8" type="char_8_t"/>
+      <Field name="interest_flag" offset="19" len="1" type="eInterestFlag"/>
+    </Struct>
+    <Struct name="end_of_snapshot" len="21" id="G" database="false">
+      <Field name="message_type" offset="0" len="1" type="char_t"/>
+      <Field name="sequence_number" offset="1" len="20" type="char_20_t"/>
+    </Struct>
+  </Structs>
+  <Operators>
+    <Operator name="std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, char_t c)" body="if (::isprint(c)) return os.put(c); else return os &lt;&lt; (int)c;" />
+    <Operator name="std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, u8_t c)" body="return os &lt;&lt; (int)c;" />
+  </Operators>
+</Model>

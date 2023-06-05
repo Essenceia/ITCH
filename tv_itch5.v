@@ -1,4 +1,4 @@
-module top #(
+module tv_itch5 #(
 	`ifdef MOLD_MSD_IDS
 	parameter SID_W     = 80,
 	parameter SEQ_NUM_W = 64
