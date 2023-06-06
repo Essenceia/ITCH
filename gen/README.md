@@ -30,6 +30,12 @@ Generation results can be altered by modifying the following situated at the top
 
 `FORMAL_FILE` output file name for the formal assertions, default `formal.v`
 
+`TB_PORT_LIST_FILE` output file name for the itch module's ports, used when 
+    creating an instance of the itch module it the test bench, default `tb_port_list.v`
+
+`TB_SIG_LIST_FILE` output file name for the declarations of the signals connected to an instance
+    of our itch module when used in the test bench, default `tb_sig_list.v` 
+
 `MOLD_MSG_CNT_SIG` name for the net that stores the count of mold message payloads we have already received, default `data_cnt_q`
 
 `MOLD_MSG_LEN` number of bytes each payload contains, default `8`

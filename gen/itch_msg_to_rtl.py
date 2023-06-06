@@ -7,6 +7,8 @@ import math
 PORT_LIST_FILE = "port_list.v"
 ASSIGN_LOGIC_FILE = "assign_logic.v"
 FORMAL_FILE = "formal.v"
+TB_PORT_LIST_FILE = "tb_port_list.v"
+TB_SIG_LIST_FILE = "tb_sig_list.v"
 
 MOLD_MSG_CNT_SIG="data_cnt_q"
 MOLD_MSG_LEN=8
@@ -17,7 +19,7 @@ ITCH_MSG_TYPE_SIG="itch_msg_type"
 SIG_PREFIX="itch_"
 SVA_PREFIX="sva_"
 
-def parse_valid(msg_name, msg_type, msg_len, port_f, assign_f):
+def parse_valid(msg_name, msg_type, msg_len, port_f, assign_f, tb_port_f, tb_sig_f):
     sig_name = SIG_PREFIX + msg_name + "_v_o"
     # get the ascii code for the message type
     msg_type_i = ord(msg_type)
@@ -26,10 +28,11 @@ def parse_valid(msg_name, msg_type, msg_len, port_f, assign_f):
 
     port_f.write("\noutput logic "+sig_name+",\n")
     assign_f.write("\nassign "+sig_name+" = "+sig_logic+";\n")
-    
+    tb_port_f.write("\n."+sig_name+"("+sig_name+"),\n") 
+    tb_sig_f.write("\nlogic "+sig_name+";\n")
     return sig_name
 
-def parse_field(msg_name, field, port_f, assign_f):
+def parse_field(msg_name, field, port_f, assign_f, tb_port_f, tb_sig_f):
     f_name = field['@name']
     f_len  = field['@len']
     f_offset = field['@offset']
@@ -41,6 +44,8 @@ def parse_field(msg_name, field, port_f, assign_f):
 
         port_f.write("output logic "+sig_dim+" "+sig_name+",\n")
         assign_f.write("assign "+sig_name+" = "+sig_logic+";\n") 
+        tb_port_f.write("."+sig_name+"("+sig_name+"),\n")
+        tb_sig_f.write("logic "+sig_dim+" "+sig_name+";\n")
 
     return sig_name
 
@@ -85,6 +90,8 @@ def main():
     port_f = open(PORT_LIST_FILE,"w")
     assign_f = open(ASSIGN_LOGIC_FILE,"w")
     formal_f = open(FORMAL_FILE,"w")
+    tb_port_f = open(TB_PORT_LIST_FILE,"w")
+    tb_sig_f = open(TB_SIG_LIST_FILE,"w")
     
     # Parse XML
     content = xmltodict.parse(my_xml)
@@ -99,7 +106,7 @@ def main():
         msg_name=struct['@name']
         msg_type=struct['@id']
         msg_len=struct['@len']
-        sig_v = parse_valid(msg_name , msg_type, msg_len, port_f, assign_f )
+        sig_v = parse_valid(msg_name , msg_type, msg_len, port_f, assign_f, tb_port_f, tb_sig_f )
         formal_valid_xcheck(sig_v, formal_f)
         sig_v_arr.append(sig_v)
         # clear list
@@ -107,13 +114,13 @@ def main():
         for field in struct['Field']:
             #print(type(field))
             if type(field) is dict:
-                sig_field = parse_field(msg_name, field, port_f, assign_f)
+                sig_field = parse_field(msg_name, field, port_f, assign_f, tb_port_f, tb_sig_f)
                 if len(sig_field) > 0:
                     sig_field_arr.append(sig_field)
             else:
                 assert(0)
         formal_fields_xcheck(sig_v, sig_field_arr , formal_f)
     formal_onehot0_valid(sig_v_arr, formal_f)
-    print("Generated RTL stored in :\nport list : "+PORT_LIST_FILE+"\nassignement logic : "+ASSIGN_LOGIC_FILE)
+    print("RTL generated")
 
 main()
