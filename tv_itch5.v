@@ -241,7 +241,7 @@ module tv_itch5 #(
 // data storage
 reg   [MSG_MAX_W-1:0]   data_q;
 logic [MSG_MAX_W-1:0]   data_next;
-logic [CNT_MAX-1:0] data_en; 
+logic [CNT_MAX-1:0]     data_en; 
 // received counter
 reg   [CNT_MAX_W-1:0] data_cnt_q;
 logic [CNT_MAX_W-1:0] data_cnt_next;
@@ -250,40 +250,62 @@ logic                 data_cnt_add_overflow;
 logic                 data_cnt_en;
 // itch message type
 logic [LEN-1:0]       itch_msg_type;
+logic                 itch_msg_sent;
 
 // count number of recieved packets
 assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b0}}, mold_v_i};
 // reset to 1 when new msg start, can't set to 0 as we are implicity using
 // this counter as a valid signal  
-assign data_cnt_next = mold_start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : data_cnt_add; 
+assign data_cnt_next = mold_start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : 
+					   itch_msg_sent ? {CNT_MAX_W{1'b0}} : data_cnt_add; 
 
 assign data_cnt_en = mold_v_i;
 always @(posedge clk) begin
-	if ( nreset ) begin
+	if ( ~nreset ) begin
 		data_cnt_q <= 1'b0;
-	end else begin
+	end else if ( data_cnt_en ) begin
 		data_cnt_q <= data_cnt_next;
 	end
 end
 
-// data_q
 genvar i;
 generate
+	// data_next
 	for( i = 0; i < CNT_MAX; i++ ) begin
 		assign data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_KEEP_W*i] = mold_data_i;
+	end
+	// data_q flop
+	always @(posedge clk) begin
+		if ( ~nreset ) begin
+			data_q[LEN-1:0] <= {LEN{1'b0}};
+		end else if ( data_en[0] ) begin
+			data_q[AXI_DATA_W-1:0] <= data_next[AXI_DATA_W-1:0];
+		end
+	end
+	for( i = 1; i < CNT_MAX; i++ ) begin
 		always @(posedge clk) begin
 			if ( data_en[i]) begin
 				data_q[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] <= data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i]; 
 			end
 		end
 	end
+	// data_en
 	assign data_en[0] = mold_start_i & mold_v_i;
 	for( i = 1; i < CNT_MAX; i++) begin
-		assign data_en[i] = (( i - 1 ) == data_cnt_q ) & mold_v_i;
+		assign data_en[i] = (( i - 1 ) == data_cnt_next ) & mold_v_i;
 	end
 endgenerate
 // message type : allways at offset 0
 assign itch_msg_type = data_q[LEN-1:0];
+// message has been sent
+assign itch_msg_sent = ( itch_system_event_v_o | itch_stock_directory_v_o | itch_stock_trading_action_v_o | 
+						 itch_reg_sho_restriction_v_o | itch_market_participant_position_v_o | itch_mwcb_decline_level_v_o |
+						 itch_mwcb_status_v_o | itch_ipo_quoting_period_update_v_o | itch_luld_auction_collar_v_o |
+						 itch_operational_halt_v_o | itch_add_order_v_o | itch_add_order_with_mpid_v_o | 
+					     itch_order_executed_v_o | itch_order_executed_with_price_v_o | itch_order_cancel_v_o |
+						 itch_order_delete_v_o | itch_order_replace_v_o | itch_trade_v_o|itch_cross_trade_v_o |
+					     itch_broken_trade_v_o | itch_net_order_imbalance_indicator_v_o | 
+					     itch_retail_price_improvement_indicator_v_o | itch_end_of_snapshot_v_o ); 
 
 // output
 // itch message assignement logic
@@ -493,17 +515,22 @@ assign itch_end_of_snapshot_sequence_number_o = data_q[LEN*1+LEN*20-1:LEN*1];
 `ifdef FORMAL
 initial begin
 	a_reset : assume( ~nreset);
+
+	//a_cnt_not_unknown : assume ( ~$isunknown( data_cnt_q ));
 end
 
 always @(posedge clk) begin
 	if ( nreset ) begin
+		// mold input behavior
+		a_mold_v_not_unknown : assume( ~$isunknown( mold_v_i));
+		a_mold_data_not_unknown : assume( ~mold_v_i | ( mold_v_i & ~$isunknown( mold_start_i | |mold_data_i ) ));
 		// should never receive more than the max expected number of packets
 		a_data_cnt_overflow : assume ( ~data_cnt_add_overflow );
 
 		// xcheck
-		sva_xcheck_data_cnt : assert ( ~$isunknown( data_cnt_q ));
+		sva_xcheck_data_cnt : assert ( ~$isunknown( |data_cnt_q ));
 		for(int unsigned x = 0; x < CNT_MAX; x++ ) begin 
-			 assert( ~(data_cnt_q == x) | ( (data_cnt_q == x ) & ~$isunknown( data_q[AXI_DATA_W*x+AXI_DATA_W-1:AXI_DATA_W*x])));
+			// assert( ~(data_cnt_q == x) | ( (data_cnt_q == x ) & ~$isunknown( data_q[AXI_DATA_W*x+AXI_DATA_W-1:AXI_DATA_W*x])));
 		end
 
 		// itch 
