@@ -12,10 +12,14 @@ python itch_msg_to_rtl.py nasdaq_totalview_itch.xml
 Generation results can be altered by modifying the following situated at the top of the script :
 
 `SIG_PREFIX` signal name prefix, default `itch_`
+
+`SVA_PREFIX` system verilog formal assertion name prefix, default `sva_`
  
 `PORT_LIST_FILE` output file name for the generated port list, default `port_list.v`
 
 `ASSIGN_LOGIC_FILE` output file name for the assignation logic, default `assign_logic.v`
+
+`FORMAL_FILE` output file name for the formal assertions, default `formal.v`
 
 `MOLD_MSG_CNT_SIG` name for the net that stores the count of mold message payloads we have already received, default `data_cnt_q`
 
@@ -23,7 +27,7 @@ Generation results can be altered by modifying the following situated at the top
 
 `MOLD_MSG_DATA_SIG` name of the net on which the payload data is stored, default `data_q`
 
-`ITCH_MSG_TYPE_SIG` name of the net on which the itch message type data is stored, default `msg_type_q` 
+`ITCH_MSG_TYPE_SIG` name of the net on which the itch message type data is stored, default `itch_msg_type` 
 
 ## ITCH message xml file
 

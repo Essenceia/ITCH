@@ -71,46 +71,49 @@ def formal_valid_xcheck(sig_valid, formal_f):
     sva_logic = sva_name + " : assert( ~$isunknown("+sig_valid+"))"
     formal_f.write(sva_logic+";\n")
 
-# Parse args.
-assert(len(sys.argv) == 2);
-path = sys.argv[1]
-assert(type(path) is str)
+def main():
+    # Parse args.
+    assert(len(sys.argv) == 2);
+    path = sys.argv[1]
+    assert(type(path) is str)
+    
+    # Open XML file.
+    with open(path, 'r', encoding='utf-8') as file:
+        my_xml = file.read()
+    
+    # Open or create output files
+    port_f = open(PORT_LIST_FILE,"w")
+    assign_f = open(ASSIGN_LOGIC_FILE,"w")
+    formal_f = open(FORMAL_FILE,"w")
+    
+    # Parse XML
+    content = xmltodict.parse(my_xml)
+    
+    # declare empty list
+    sig_v_arr = []
+    sig_field_arr = []
+    
+    # Read Strucsts
+    structs = content['Model']['Structs']['Struct']
+    for struct in structs:
+        msg_name=struct['@name']
+        msg_type=struct['@id']
+        msg_len=struct['@len']
+        sig_v = parse_valid(msg_name , msg_type, msg_len, port_f, assign_f )
+        formal_valid_xcheck(sig_v, formal_f)
+        sig_v_arr.append(sig_v)
+        # clear list
+        sig_field_arr.clear()
+        for field in struct['Field']:
+            #print(type(field))
+            if type(field) is dict:
+                sig_field = parse_field(msg_name, field, port_f, assign_f)
+                if len(sig_field) > 0:
+                    sig_field_arr.append(sig_field)
+            else:
+                assert(0)
+        formal_fields_xcheck(sig_v, sig_field_arr , formal_f)
+    formal_onehot0_valid(sig_v_arr, formal_f)
+    print("Generated RTL stored in :\nport list : "+PORT_LIST_FILE+"\nassignement logic : "+ASSIGN_LOGIC_FILE)
 
-# Open XML file.
-with open(path, 'r', encoding='utf-8') as file:
-    my_xml = file.read()
-
-# Open or create output files
-port_f = open(PORT_LIST_FILE,"w")
-assign_f = open(ASSIGN_LOGIC_FILE,"w")
-formal_f = open(FORMAL_FILE,"w")
-
-# Parse XML
-content = xmltodict.parse(my_xml)
-
-# declare empty list
-sig_v_arr = []
-sig_field_arr = []
-
-# Read Strucsts
-structs = content['Model']['Structs']['Struct']
-for struct in structs:
-    msg_name=struct['@name']
-    msg_type=struct['@id']
-    msg_len=struct['@len']
-    sig_v = parse_valid(msg_name , msg_type, msg_len, port_f, assign_f )
-    formal_valid_xcheck(sig_v, formal_f)
-    sig_v_arr.append(sig_v)
-    # clear list
-    sig_field_arr.clear()
-    for field in struct['Field']:
-        #print(type(field))
-        if type(field) is dict:
-            sig_field = parse_field(msg_name, field, port_f, assign_f)
-            if len(sig_field) > 0:
-                sig_field_arr.append(sig_field)
-        else:
-            assert(0)
-    formal_fields_xcheck(sig_v, sig_field_arr , formal_f)
-formal_onehot0_valid(sig_v_arr, formal_f)
-print("Generated RTL stored in :\nport list : "+PORT_LIST_FILE+"\nassignement logic : "+ASSIGN_LOGIC_FILE)
+main()
