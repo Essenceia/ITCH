@@ -24,10 +24,10 @@ module tv_itch5 #(
 	input clk,
 	input nreset,
 
-	//moldupd64
-	input mold_v_i,
-	input mold_start_i,
-	input [AXI_DATA_W-1:0] mold_data_i,
+	//message
+	input valid_i,
+	input start_i,
+	input [AXI_DATA_W-1:0] data_i,
 
 	`ifdef MOLD_MSD_IDS
 	input [SID_W-1:0]     mold_sid_i,
@@ -253,13 +253,13 @@ logic [LEN-1:0]       itch_msg_type;
 logic                 itch_msg_sent;
 
 // count number of recieved packets
-assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b0}}, mold_v_i};
+assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b0}}, valid_i};
 // reset to 1 when new msg start, can't set to 0 as we are implicity using
 // this counter as a valid signal  
-assign data_cnt_next = mold_start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : 
+assign data_cnt_next = start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : 
 					   itch_msg_sent ? {CNT_MAX_W{1'b0}} : data_cnt_add; 
 
-assign data_cnt_en = mold_v_i | itch_msg_sent;
+assign data_cnt_en = valid_i | itch_msg_sent;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		data_cnt_q <= 1'b0;
@@ -273,9 +273,9 @@ generate
 	// data_next
 	for( i = 0; i < CNT_MAX; i++ ) begin 
 		if ( i == CNT_MAX-1) begin
-			assign data_next[MSG_MAX_W-1:AXI_DATA_W*i] = mold_data_i[(MSG_MAX_W-AXI_DATA_W*i-1):0];
+			assign data_next[MSG_MAX_W-1:AXI_DATA_W*i] = data_i[(MSG_MAX_W-AXI_DATA_W*i-1):0];
 		end else begin
-			assign data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] = mold_data_i;
+			assign data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] = data_i;
 		end
 	end
 	// data_q flop
@@ -298,9 +298,9 @@ generate
 		end
 	end
 	// data_en
-	assign data_en[0] = mold_start_i & mold_v_i;
+	assign data_en[0] = start_i & valid_i;
 	for( i = 1; i < CNT_MAX; i++) begin
-		assign data_en[i] = (( i + 1 ) == data_cnt_next ) & mold_v_i;
+		assign data_en[i] = (( i + 1 ) == data_cnt_next ) & valid_i;
 	end
 endgenerate
 // message type : allways at offset 0
@@ -530,8 +530,8 @@ end
 always @(posedge clk) begin
 	if ( nreset ) begin
 		// mold input behavior
-		a_mold_v_not_unknown : assume( ~$isunknown( mold_v_i));
-		a_mold_data_not_unknown : assume( ~mold_v_i | ( mold_v_i & ~$isunknown( mold_start_i | |mold_data_i ) ));
+		a_v_not_unknown : assume( ~$isunknown( valid_i));
+		a_data_not_unknown : assume( ~valid_i | ( valid_i & ~$isunknown( start_i | |data_i ) ));
 		// should never receive more than the max expected number of packets
 		a_data_cnt_overflow : assume ( ~data_cnt_add_overflow );
 

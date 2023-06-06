@@ -6,3 +6,5 @@
 - Check endianness
 - gen : add coverpoints on itch msg valid
 - gen : add or logic for `itch_msg_sent`
+- add xlm field to identify if itch message is part of the glimpse extension
+- add define wrapping around glimpse specific messages
