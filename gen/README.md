@@ -11,6 +11,8 @@ python itch_msg_to_rtl.py nasdaq_totalview_itch.xml
 
 Generation results can be altered by modifying the following situated at the top of the script :
 
+`SIG_PREFIX` signal name prefix, default `itch_`
+ 
 `PORT_LIST_FILE` output file name for the generated port list, default `port_list.v`
 
 `ASSIGN_LOGIC_FILE` output file name for the assignation logic, default `assign_logic.v`

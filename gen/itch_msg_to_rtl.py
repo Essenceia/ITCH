@@ -11,10 +11,12 @@ MOLD_MSG_CNT_SIG="data_cnt_q"
 MOLD_MSG_LEN=8
 MOLD_MSG_DATA_SIG="data_q"
 
-ITCH_MSG_TYPE_SIG="msg_type_q"
+ITCH_MSG_TYPE_SIG="itch_msg_type"
+
+SIG_PREFIX="itch_"
 
 def parse_valid(msg_name, msg_type, msg_len, port_f, assign_f):
-    sig_name = "msg_" + msg_name + "_v_o"
+    sig_name = SIG_PREFIX + msg_name + "_v_o"
     # get the ascii code for the message type
     msg_type_i = ord(msg_type)
     exp_msg_cnt = math.ceil(int(msg_len)/MOLD_MSG_LEN)
@@ -27,12 +29,13 @@ def parse_field(msg_name, field, port_f, assign_f):
     f_name = field['@name']
     f_len  = field['@len']
     f_offset = field['@offset']
-    sig_name = "msg_"+msg_name+"_"+f_name+"_o"
-    sig_dim = "["+f_len+"*LEN-1:0]"
-    sig_logic = MOLD_MSG_DATA_SIG+"[LEN*"+f_offset+"+LEN*"+f_len+"-1:LEN*"+f_offset+"]"
+    if not( f_name == "message_type" ):
+        sig_name = SIG_PREFIX+msg_name+"_"+f_name+"_o"
+        sig_dim = "["+f_len+"*LEN-1:0]"
+        sig_logic = MOLD_MSG_DATA_SIG+"[LEN*"+f_offset+"+LEN*"+f_len+"-1:LEN*"+f_offset+"]"
 
-    port_f.write("output logic "+sig_dim+" "+sig_name+",\n")
-    assign_f.write("assign "+sig_name+" = "+sig_logic+";\n") 
+        port_f.write("output logic "+sig_dim+" "+sig_name+",\n")
+        assign_f.write("assign "+sig_name+" = "+sig_logic+";\n") 
 
 # Parse args.
 assert(len(sys.argv) == 2);
