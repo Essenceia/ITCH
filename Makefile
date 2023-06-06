@@ -10,7 +10,7 @@ BUILD=build
 CONF=conf
 
 FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
-DEFINES= $(if $(debug),-DMOLD_MSG_IDS)
+DEFINES=-DGLIMPSE $(if $(debug),-DMOLD_MSG_IDS)
 
 WAVE_FILE=wave.vcd
 WAVE_CONF=wave.conf

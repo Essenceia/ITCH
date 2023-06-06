@@ -12,7 +12,7 @@ To add the `End of Snapshot` message present only in the GLIMPSE extention the
 This can be done by adding it to the list of `DEFINES` in the `Makefile`.
 
 ```
-DEFINE=-DGLIMPSE <other defines>
+DEFINES=-DGLIMPSE <other defines>
 ```
 
 By default `GLIMPSE` should be defined.
