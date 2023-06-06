@@ -1,6 +1,6 @@
 # TODO list
 
-- Add generation of formal assertions :
-    - xcheck : valid, data when valid
-    - onehot0 on valid itch message type
-    - cover points for every itch msg valid
+- Cut lines down lines to 80 character length max
+- Add seq num and sid to outputs 
+- Fix broken formal 
+ 
