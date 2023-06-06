@@ -228,15 +228,17 @@ module tv_itch5 #(
 	output logic [1*LEN-1:0] itch_net_order_imbalance_indicator_cross_type_o,
 	output logic [1*LEN-1:0] itch_net_order_imbalance_indicator_price_variation_indicator_o,
 	
+	`ifdef GLIMPSE	
+	output logic itch_end_of_snapshot_v_o,
+	output logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o,
+	`endif
+
 	output logic itch_retail_price_improvement_indicator_v_o,
 	output logic [2*LEN-1:0] itch_retail_price_improvement_indicator_stock_locate_o,
 	output logic [2*LEN-1:0] itch_retail_price_improvement_indicator_tracking_number_o,
 	output logic [6*LEN-1:0] itch_retail_price_improvement_indicator_timestamp_o,
 	output logic [8*LEN-1:0] itch_retail_price_improvement_indicator_stock_o,
-	output logic [1*LEN-1:0] itch_retail_price_improvement_indicator_interest_flag_o,
-	
-	output logic itch_end_of_snapshot_v_o,
-	output logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o
+	output logic [1*LEN-1:0] itch_retail_price_improvement_indicator_interest_flag_o
 );
 // data storage
 reg   [MSG_MAX_W-1:0]   data_q;
@@ -313,7 +315,11 @@ assign itch_msg_sent = ( itch_system_event_v_o | itch_stock_directory_v_o | itch
 					     itch_order_executed_v_o | itch_order_executed_with_price_v_o | itch_order_cancel_v_o |
 						 itch_order_delete_v_o | itch_order_replace_v_o | itch_trade_v_o|itch_cross_trade_v_o |
 					     itch_broken_trade_v_o | itch_net_order_imbalance_indicator_v_o | 
-					     itch_retail_price_improvement_indicator_v_o | itch_end_of_snapshot_v_o ); 
+					     itch_retail_price_improvement_indicator_v_o 
+`ifdef GLIMPSE
+						 | itch_end_of_snapshot_v_o
+`endif
+ ); 
 
 // output
 // itch message assignement logic
@@ -518,8 +524,10 @@ assign itch_retail_price_improvement_indicator_timestamp_o = data_q[LEN*5+LEN*6-
 assign itch_retail_price_improvement_indicator_stock_o = data_q[LEN*11+LEN*8-1:LEN*11];
 assign itch_retail_price_improvement_indicator_interest_flag_o = data_q[LEN*19+LEN*1-1:LEN*19];
 
+`ifdef GLIMPSE
 assign itch_end_of_snapshot_v_o = (itch_msg_type == 'd71) & (data_cnt_q == 'd3);
 assign itch_end_of_snapshot_sequence_number_o = data_q[(LEN*1+LEN*20)-1:LEN*1];
+`endif
 `ifdef FORMAL
 initial begin
 	a_reset : assume( ~nreset);
@@ -607,11 +615,15 @@ always @(posedge clk) begin
 		
 		sva_xcheck_itch_retail_price_improvement_indicator_v_o : assert( ~$isunknown(itch_retail_price_improvement_indicator_v_o));
 		sva_xcheck_itch_retail_price_improvement_indicator_data : assert( ~itch_retail_price_improvement_indicator_v_o | (itch_retail_price_improvement_indicator_v_o & ~$isunknown((|itch_retail_price_improvement_indicator_stock_locate_o | |itch_retail_price_improvement_indicator_tracking_number_o | |itch_retail_price_improvement_indicator_timestamp_o | |itch_retail_price_improvement_indicator_stock_o | |itch_retail_price_improvement_indicator_interest_flag_o))));
-		
+		`ifdef GLIMPSE	
 		sva_xcheck_itch_end_of_snapshot_v_o : assert( ~$isunknown(itch_end_of_snapshot_v_o));
 		sva_xcheck_itch_end_of_snapshot_data : assert( ~itch_end_of_snapshot_v_o | (itch_end_of_snapshot_v_o & ~$isunknown((|itch_end_of_snapshot_sequence_number_o))));
-		
-		sva_itch_msg_valid_onehot0 : assert( $onehot0({itch_system_event_v_o,itch_stock_directory_v_o,itch_stock_trading_action_v_o,itch_reg_sho_restriction_v_o,itch_market_participant_position_v_o,itch_mwcb_decline_level_v_o,itch_mwcb_status_v_o,itch_ipo_quoting_period_update_v_o,itch_luld_auction_collar_v_o,itch_operational_halt_v_o,itch_add_order_v_o,itch_add_order_with_mpid_v_o,itch_order_executed_v_o,itch_order_executed_with_price_v_o,itch_order_cancel_v_o,itch_order_delete_v_o,itch_order_replace_v_o,itch_trade_v_o,itch_cross_trade_v_o,itch_broken_trade_v_o,itch_net_order_imbalance_indicator_v_o,itch_retail_price_improvement_indicator_v_o,itch_end_of_snapshot_v_o}));	
+		`endif
+		sva_itch_msg_valid_onehot0 : assert( $onehot0({itch_system_event_v_o,itch_stock_directory_v_o,itch_stock_trading_action_v_o,itch_reg_sho_restriction_v_o,itch_market_participant_position_v_o,itch_mwcb_decline_level_v_o,itch_mwcb_status_v_o,itch_ipo_quoting_period_update_v_o,itch_luld_auction_collar_v_o,itch_operational_halt_v_o,itch_add_order_v_o,itch_add_order_with_mpid_v_o,itch_order_executed_v_o,itch_order_executed_with_price_v_o,itch_order_cancel_v_o,itch_order_delete_v_o,itch_order_replace_v_o,itch_trade_v_o,itch_cross_trade_v_o,itch_broken_trade_v_o,itch_net_order_imbalance_indicator_v_o,itch_retail_price_improvement_indicator_v_o
+		`ifdef GLIMPSE
+		,itch_end_of_snapshot_v_o
+		`endif
+		}));	
 	end
 end
 

@@ -254,9 +254,13 @@ initial begin
 	#10
 	valid_i = 1'b0;
 	data_i = 'x;
+`ifdef GLIMPSE
 	assert( itch_end_of_snapshot_v_o );
 	assert( itch_end_of_snapshot_sequence_number_o == tb_eos_data );
-	
+`else
+	// glimpse not supported, no message should have been seen
+	assert( ~m_uut.itch_msg_sent );
+`endif // GLIMPSE
 	#20
 	`ifdef DEBUG
 	$display("Test end");
@@ -446,13 +450,15 @@ m_uut(
 	.itch_net_order_imbalance_indicator_current_reference_price_o(itch_net_order_imbalance_indicator_current_reference_price_o),
 	.itch_net_order_imbalance_indicator_cross_type_o(itch_net_order_imbalance_indicator_cross_type_o),
 	.itch_net_order_imbalance_indicator_price_variation_indicator_o(itch_net_order_imbalance_indicator_price_variation_indicator_o),
-	.itch_retail_price_improvement_indicator_v_o(itch_retail_price_improvement_indicator_v_o),
+`ifdef GLIMPSE
+	.itch_end_of_snapshot_v_o(itch_end_of_snapshot_v_o),
+	.itch_end_of_snapshot_sequence_number_o(itch_end_of_snapshot_sequence_number_o),
+`endif
+	.itch_retail_price_improvement_indicator_v_o(itch_retail_price_improvement_indicator_v_o),	
 	.itch_retail_price_improvement_indicator_stock_locate_o(itch_retail_price_improvement_indicator_stock_locate_o),
 	.itch_retail_price_improvement_indicator_tracking_number_o(itch_retail_price_improvement_indicator_tracking_number_o),
 	.itch_retail_price_improvement_indicator_timestamp_o(itch_retail_price_improvement_indicator_timestamp_o),
 	.itch_retail_price_improvement_indicator_stock_o(itch_retail_price_improvement_indicator_stock_o),
-	.itch_retail_price_improvement_indicator_interest_flag_o(itch_retail_price_improvement_indicator_interest_flag_o),
-	.itch_end_of_snapshot_v_o(itch_end_of_snapshot_v_o),
-	.itch_end_of_snapshot_sequence_number_o(itch_end_of_snapshot_sequence_number_o)
+	.itch_retail_price_improvement_indicator_interest_flag_o(itch_retail_price_improvement_indicator_interest_flag_o)
 );
 endmodule
