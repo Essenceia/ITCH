@@ -1,6 +1,6 @@
 # ITCH decoder
 
-RTL implementation of the Nasdaq TotalView-ITCH 5.0.
+RTL implementation of a Nasdaq TotalView-ITCH 5.0 decoder.
 
 Designed to work alongside the MoldUPD64 module https://github.com/Essenceia/MoldUPD64.
 
@@ -9,7 +9,7 @@ Designed to work alongside the MoldUPD64 module https://github.com/Essenceia/Mol
 To run formal using yosys :
 
 ```
-sby -f formal/formal.sby
+make formal
 ```
 
 ## RTL generation

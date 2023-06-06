@@ -1,8 +1,17 @@
 # Generator
 
-As the RTL code for the itch decoder is simple but repetitive it is generated 
-using and xml file outlining the itch message format anf the python script 
+As the RTL code for the itch decoder is simple but repetitive.
+We generate it using and xml file outlining the itch message format and a small script 
 `itch_msg_to_rtl.py`.
+
+This will generate 3 files :
+
+`port_list.v` output port list
+
+`assign_logic.v` assignation logic to identify the itch message corresponding to the flopped mold message
+    and correctly break down all it's filed to drive the module outputs
+
+`formal.v` system verilog formal assertions to verify behavior of module and perform sanity checks on outputs
 
 Usage :
 ```
