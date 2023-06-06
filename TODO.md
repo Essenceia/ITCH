@@ -4,3 +4,5 @@
 - Add seq num and sid to outputs 
 - Fix broken formal 
 - Check endianness
+- gen : add coverpoints on itch msg valid
+- gen : add or logic for `itch_msg_sent`
