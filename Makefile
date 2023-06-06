@@ -32,7 +32,7 @@ run: test
 	vvp ${BUILD}/tb
 
 wave: run
-	${VIEW} ${BUILD}/${WAVE_FILE} ${CONF}/${WAVE_CONF}
+	${VIEW} ${BUILD}/${WAVE_FILE} ${BUILD}/${WAVE_CONF}
 	
 clean:
 	rm -fr ${BUILD}/*

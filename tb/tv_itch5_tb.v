@@ -15,7 +15,7 @@ localparam AXI_DATA_W = 64;
 localparam AXI_KEEP_W = AXI_DATA_W / 8;
 
 
-logic                  mold_v_i;
+logic                  mold_v_i = 1'b0;
 logic                  mold_start_i;
 logic [AXI_DATA_W-1:0] mold_data_i;
 
@@ -224,9 +224,12 @@ logic itch_end_of_snapshot_v_o;
 logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o;
 always #5 clk = ~clk;
 
+logic [20*LEN-1:0] tb_eos_data;
+logic [LEN-1:0]    tb_msg_type;
+
 initial begin
-	$dumpfile("build/tv_itch_tb.vcd");
-	$dumpvars(0, tv_itch_tb);
+	$dumpfile("build/wave.vcd");
+	$dumpvars(0, tv_itch5_tb);
 	`ifdef DEBUG
 	$display("Starting test");
 	`endif
@@ -234,15 +237,35 @@ initial begin
 	#10
 	nreset = 1'b1;
 	// start test
-	
 	#10
+	mold_v_i     = 1'b1;
+	mold_start_i = 1'b1;
+	// send simple end of snapshot msg, len = 21 bytes
+	// will be sent over the next 3 cycles
+	tb_msg_type  = "G"; 
+	tb_eos_data  = {  5{32'hFFFFFFFF}};
+	//tb_eos_data  = {5{32'hDEADBEAD}};
+	mold_data_i  = { tb_eos_data[AXI_DATA_W-LEN-1:0], tb_msg_type };
+	#10
+	mold_start_i = 1'b0;
+	mold_data_i  = tb_eos_data[AXI_DATA_W*2-LEN-1:AXI_DATA_W-LEN];
+	#10
+	mold_data_i  = { {AXI_DATA_W*3-LEN*21-1{1'bx}} , tb_eos_data[LEN*20-1:AXI_DATA_W*2-LEN] };
+	#10
+	mold_v_i = 1'b0;
+	mold_data_i = 'x;
+	assert( itch_end_of_snapshot_v_o );
+	assert( itch_end_of_snapshot_sequence_number_o == tb_eos_data );
+	
+	#20
 	`ifdef DEBUG
 	$display("Test end");
 	`endif
 	$finish;
 end
 
-tv_itch5 m_uut(
+tv_itch5 #( .LEN(LEN))
+m_uut(
 	.clk(clk),
 	.nreset(nreset),
 

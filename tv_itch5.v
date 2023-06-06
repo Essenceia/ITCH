@@ -259,7 +259,7 @@ assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b
 assign data_cnt_next = mold_start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : 
 					   itch_msg_sent ? {CNT_MAX_W{1'b0}} : data_cnt_add; 
 
-assign data_cnt_en = mold_v_i;
+assign data_cnt_en = mold_v_i | itch_msg_sent;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		data_cnt_q <= 1'b0;
@@ -272,7 +272,11 @@ genvar i;
 generate
 	// data_next
 	for( i = 0; i < CNT_MAX; i++ ) begin 
-		assign data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] = mold_data_i;
+		if ( i == CNT_MAX-1) begin
+			assign data_next[MSG_MAX_W-1:AXI_DATA_W*i] = mold_data_i[(MSG_MAX_W-AXI_DATA_W*i-1):0];
+		end else begin
+			assign data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] = mold_data_i;
+		end
 	end
 	// data_q flop
 	always @(posedge clk) begin
@@ -285,14 +289,18 @@ generate
 	for( i = 1; i < CNT_MAX; i++ ) begin
 		always @(posedge clk) begin
 			if ( data_en[i]) begin
-				data_q[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] <= data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i]; 
+				if ( i == CNT_MAX-1) begin
+					data_q[MSG_MAX_W-1:AXI_DATA_W*i] <= data_next[(MSG_MAX_W-AXI_DATA_W*i-1):0]; 
+				end else begin
+					data_q[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] <= data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i]; 
+				end
 			end
 		end
 	end
 	// data_en
 	assign data_en[0] = mold_start_i & mold_v_i;
 	for( i = 1; i < CNT_MAX; i++) begin
-		assign data_en[i] = (( i - 1 ) == data_cnt_next ) & mold_v_i;
+		assign data_en[i] = (( i + 1 ) == data_cnt_next ) & mold_v_i;
 	end
 endgenerate
 // message type : allways at offset 0
@@ -511,7 +519,7 @@ assign itch_retail_price_improvement_indicator_stock_o = data_q[LEN*11+LEN*8-1:L
 assign itch_retail_price_improvement_indicator_interest_flag_o = data_q[LEN*19+LEN*1-1:LEN*19];
 
 assign itch_end_of_snapshot_v_o = (itch_msg_type == 'd71) & (data_cnt_q == 'd3);
-assign itch_end_of_snapshot_sequence_number_o = data_q[LEN*1+LEN*20-1:LEN*1];
+assign itch_end_of_snapshot_sequence_number_o = data_q[(LEN*1+LEN*20)-1:LEN*1];
 `ifdef FORMAL
 initial begin
 	a_reset : assume( ~nreset);
