@@ -6,9 +6,9 @@
  * This code is provided "as is" without any express or implied warranties. */ 
 
 module tv_itch5 #(
-	`ifdef MOLD_MSD_IDS
+	`ifdef MOLD_MSG_IDS
 	parameter SID_W     = 80,
-	parameter SEQ_NUM_W = 64
+	parameter SEQ_NUM_W = 64,
 	`endif	
 
 	parameter AXI_DATA_W = 64,
@@ -29,9 +29,11 @@ module tv_itch5 #(
 	input start_i,
 	input [AXI_DATA_W-1:0] data_i,
 
-	`ifdef MOLD_MSD_IDS
-	input [SID_W-1:0]     mold_sid_i,
-	input [SEQ_NUM_W-1:0] mold_seq_num_i, 
+	`ifdef MOLD_MSG_IDS
+	input  [SID_W-1:0]     mold_sid_i,
+	input  [SEQ_NUM_W-1:0] mold_seq_num_i, 
+	output [SID_W-1:0]     mold_sid_o,
+	output [SEQ_NUM_W-1:0] mold_seq_num_o, 
 	`endif 
 
 	output logic itch_system_event_v_o,
@@ -241,18 +243,25 @@ module tv_itch5 #(
 	output logic [1*LEN-1:0] itch_retail_price_improvement_indicator_interest_flag_o
 );
 // data storage
-reg   [MSG_MAX_W-1:0]   data_q;
-logic [MSG_MAX_W-1:0]   data_next;
-logic [CNT_MAX-1:0]     data_en; 
+reg   [MSG_MAX_W-1:0]  data_q;
+logic [MSG_MAX_W-1:0]  data_next;
+logic [CNT_MAX-1:0]    data_en; 
 // received counter
-reg   [CNT_MAX_W-1:0] data_cnt_q;
-logic [CNT_MAX_W-1:0] data_cnt_next;
-logic [CNT_MAX_W-1:0] data_cnt_add;
-logic                 data_cnt_add_overflow;
-logic                 data_cnt_en;
+reg   [CNT_MAX_W-1:0]  data_cnt_q;
+logic [CNT_MAX_W-1:0]  data_cnt_next;
+logic [CNT_MAX_W-1:0]  data_cnt_add;
+logic                  data_cnt_add_overflow;
+logic                  data_cnt_en;
 // itch message type
-logic [LEN-1:0]       itch_msg_type;
-logic                 itch_msg_sent;
+logic [LEN-1:0]        itch_msg_type;
+logic                  itch_msg_sent;
+`ifdef MOLD_MSG_IDS
+reg   [SEQ_NUM_W-1:0]  mold_seq_q;
+logic [SEQ_NUM_W-1:0]  mold_seq_next;
+reg   [SID_W-1:0]      mold_sid_q;
+logic [SID_W-1:0]      mold_sid_next;
+logic                  mold_id_en;
+`endif
 
 // count number of recieved packets
 assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b0}}, valid_i};
@@ -305,6 +314,20 @@ generate
 		assign data_en[i] = (( i + 1 ) == data_cnt_next ) & valid_i;
 	end
 endgenerate
+
+`ifdef MOLD_MSG_IDS
+assign mold_seq_next = mold_seq_num_i;
+assign mold_sid_next = mold_sid_i;
+assign mold_id_en    = valid_i & start_i;
+always @(posedge clk) begin
+	if ( mold_id_en ) begin
+		mold_seq_q <= mold_seq_next;
+		mold_sid_q <= mold_sid_next;
+	end
+end
+assign mold_seq_num_o = mold_seq_q;
+assign mold_sid_o     = mold_sid_q;
+`endif
 // message type : allways at offset 0
 assign itch_msg_type = data_q[LEN-1:0];
 // message has been sent

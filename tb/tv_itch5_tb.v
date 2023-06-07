@@ -14,10 +14,19 @@ localparam LEN = 8;
 localparam AXI_DATA_W = 64;
 localparam AXI_KEEP_W = AXI_DATA_W / 8;
 
+localparam SEQ_NUM_W = 64;
+localparam SID_W = 80;
 
 logic                  valid_i = 1'b0;
 logic                  start_i;
 logic [AXI_DATA_W-1:0] data_i;
+
+`ifdef MOLD_MSG_IDS
+logic [SEQ_NUM_W-1:0] mold_seq_num_i;
+logic [SEQ_NUM_W-1:0] mold_seq_num_o;
+logic [SID_W-1:0]     mold_sid_i;
+logic [SID_W-1:0]     mold_sid_o;
+`endif
 
 logic itch_system_event_v_o;
 logic [2*LEN-1:0] itch_system_event_stock_locate_o;
@@ -222,10 +231,17 @@ logic [1*LEN-1:0] itch_retail_price_improvement_indicator_interest_flag_o;
 
 logic itch_end_of_snapshot_v_o;
 logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o;
-always #5 clk = ~clk;
+
+
+`ifdef MOLD_MSG_IDS
+logic [SEQ_NUM_W-1:0]  tb_mold_seq;
+logic [SID_W-1:0]      tb_mold_sid;
+`endif
 
 logic [20*LEN-1:0] tb_eos_data;
 logic [LEN-1:0]    tb_msg_type;
+
+always #5 clk = ~clk;
 
 initial begin
 	$dumpfile("build/wave.vcd");
@@ -240,6 +256,12 @@ initial begin
 	#10
 	valid_i     = 1'b1;
 	start_i = 1'b1;
+	`ifdef MOLD_MSG_IDS
+	tb_mold_seq    = { $random(), $random()};
+	tb_mold_sid    = { $random(), $random(), $random() };
+	mold_seq_num_i = tb_mold_seq;
+	mold_sid_i     = tb_mold_sid;
+	`endif
 	// send simple end of snapshot msg, len = 21 bytes
 	// will be sent over the next 3 cycles
 	tb_msg_type  = "G"; 
@@ -254,6 +276,7 @@ initial begin
 	#10
 	valid_i = 1'b0;
 	data_i = 'x;
+	// check results
 `ifdef GLIMPSE
 	assert( itch_end_of_snapshot_v_o );
 	assert( itch_end_of_snapshot_sequence_number_o == tb_eos_data );
@@ -261,6 +284,10 @@ initial begin
 	// glimpse not supported, no message should have been seen
 	assert( ~m_uut.itch_msg_sent );
 `endif // GLIMPSE
+`ifdef MOLD_MSG_IDS
+	assert( mold_seq_num_o == tb_mold_seq );
+	assert( mold_sid_o     == tb_mold_sid );
+`endif
 	#20
 	`ifdef DEBUG
 	$display("Test end");
@@ -277,6 +304,12 @@ m_uut(
 	.start_i(start_i),
 	.data_i(data_i),
 
+	`ifdef MOLD_MSG_IDS
+	.mold_sid_i(mold_sid_i),    
+	.mold_seq_num_i(mold_seq_num_i),
+	.mold_sid_o(mold_sid_o),
+	.mold_seq_num_o(mold_seq_num_o),
+	`endif
 	.itch_system_event_v_o(itch_system_event_v_o),
 	.itch_system_event_stock_locate_o(itch_system_event_stock_locate_o),
 	.itch_system_event_tracking_number_o(itch_system_event_tracking_number_o),
@@ -462,3 +495,4 @@ m_uut(
 	.itch_retail_price_improvement_indicator_interest_flag_o(itch_retail_price_improvement_indicator_interest_flag_o)
 );
 endmodule
+
