@@ -14,18 +14,15 @@ localparam LEN = 8;
 localparam AXI_DATA_W = 64;
 localparam AXI_KEEP_W = AXI_DATA_W / 8;
 
-localparam SEQ_NUM_W = 64;
-localparam SID_W = 80;
+localparam DEBUG_ID_W = 64;
 
 logic                  valid_i = 1'b0;
 logic                  start_i;
 logic [AXI_DATA_W-1:0] data_i;
 
-`ifdef MOLD_MSG_IDS
-logic [SEQ_NUM_W-1:0] mold_seq_num_i;
-logic [SEQ_NUM_W-1:0] mold_seq_num_o;
-logic [SID_W-1:0]     mold_sid_i;
-logic [SID_W-1:0]     mold_sid_o;
+`ifdef DEBUG
+logic [DEBUG_ID_W-1:0] debug_id_i;
+logic [DEBUG_ID_W-1:0] debug_id_o;
 `endif
 
 logic itch_system_event_v_o;
@@ -233,9 +230,8 @@ logic itch_end_of_snapshot_v_o;
 logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o;
 
 
-`ifdef MOLD_MSG_IDS
-logic [SEQ_NUM_W-1:0]  tb_mold_seq;
-logic [SID_W-1:0]      tb_mold_sid;
+`ifdef DEBUG
+logic [DEBUG_ID_W-1:0] tb_debug_id;
 `endif
 
 logic [20*LEN-1:0] tb_eos_data;
@@ -247,7 +243,7 @@ initial begin
 	$dumpfile("build/wave.vcd");
 	$dumpvars(0, tv_itch5_tb);
 	`ifdef DEBUG
-	$display("Starting test");
+	$display("Debug activated : Starting test");
 	`endif
 	// reset
 	#10
@@ -256,11 +252,9 @@ initial begin
 	#10
 	valid_i     = 1'b1;
 	start_i = 1'b1;
-	`ifdef MOLD_MSG_IDS
-	tb_mold_seq    = { $random(), $random()};
-	tb_mold_sid    = { $random(), $random(), $random() };
-	mold_seq_num_i = tb_mold_seq;
-	mold_sid_i     = tb_mold_sid;
+	`ifdef DEBUG
+	tb_debug_id = { $random(), $random()};
+	debug_id_i  = tb_debug_id;
 	`endif
 	// send simple end of snapshot msg, len = 21 bytes
 	// will be sent over the next 3 cycles
@@ -284,9 +278,8 @@ initial begin
 	// glimpse not supported, no message should have been seen
 	assert( ~m_uut.itch_msg_sent );
 `endif // GLIMPSE
-`ifdef MOLD_MSG_IDS
-	assert( mold_seq_num_o == tb_mold_seq );
-	assert( mold_sid_o     == tb_mold_sid );
+`ifdef DEBUG
+	assert( debug_id_o == tb_debug_id );
 `endif
 	#20
 	`ifdef DEBUG
@@ -304,11 +297,9 @@ m_uut(
 	.start_i(start_i),
 	.data_i(data_i),
 
-	`ifdef MOLD_MSG_IDS
-	.mold_sid_i(mold_sid_i),    
-	.mold_seq_num_i(mold_seq_num_i),
-	.mold_sid_o(mold_sid_o),
-	.mold_seq_num_o(mold_seq_num_o),
+	`ifdef DEBUG
+	.debug_id_i(debug_id_i),    
+	.debug_id_o(debug_id_o),
 	`endif
 	.itch_system_event_v_o(itch_system_event_v_o),
 	.itch_system_event_stock_locate_o(itch_system_event_stock_locate_o),

@@ -6,11 +6,9 @@
  * This code is provided "as is" without any express or implied warranties. */ 
 
 module tv_itch5 #(
-	`ifdef MOLD_MSG_IDS
-	parameter SID_W     = 80,
-	parameter SEQ_NUM_W = 64,
-	`endif	
-
+	`ifdef DEBUG
+	parameter DEBUG_ID_W = 64,
+	`endif
 	parameter AXI_DATA_W = 64,
 	parameter AXI_KEEP_W = AXI_DATA_W / 8,
 	
@@ -29,11 +27,11 @@ module tv_itch5 #(
 	input start_i,
 	input [AXI_DATA_W-1:0] data_i,
 
-	`ifdef MOLD_MSG_IDS
-	input  [SID_W-1:0]     mold_sid_i,
-	input  [SEQ_NUM_W-1:0] mold_seq_num_i, 
-	output [SID_W-1:0]     mold_sid_o,
-	output [SEQ_NUM_W-1:0] mold_seq_num_o, 
+	`ifdef DEBUG
+	// debug id associated with current message, used to track
+	// messages through pipeline for debug
+	input  [DEBUG_ID_W-1:0] debug_id_i,
+	output [DEBUG_ID_W-1:0] debug_id_o,
 	`endif 
 
 	output logic itch_system_event_v_o,
@@ -255,12 +253,10 @@ logic                  data_cnt_en;
 // itch message type
 logic [LEN-1:0]        itch_msg_type;
 logic                  itch_msg_sent;
-`ifdef MOLD_MSG_IDS
-reg   [SEQ_NUM_W-1:0]  mold_seq_q;
-logic [SEQ_NUM_W-1:0]  mold_seq_next;
-reg   [SID_W-1:0]      mold_sid_q;
-logic [SID_W-1:0]      mold_sid_next;
-logic                  mold_id_en;
+`ifdef DEBUG
+reg   [DEBUG_ID_W-1:0] debug_id_q;
+logic [DEBUG_ID_W-1:0] debug_id_next;
+logic                  debug_id_en;
 `endif
 
 // count number of recieved packets
@@ -315,18 +311,15 @@ generate
 	end
 endgenerate
 
-`ifdef MOLD_MSG_IDS
-assign mold_seq_next = mold_seq_num_i;
-assign mold_sid_next = mold_sid_i;
-assign mold_id_en    = valid_i & start_i;
+`ifdef DEBUG
+assign debug_id_next = debug_id_i;
+assign debug_id_en   = valid_i & start_i;
 always @(posedge clk) begin
-	if ( mold_id_en ) begin
-		mold_seq_q <= mold_seq_next;
-		mold_sid_q <= mold_sid_next;
+	if ( debug_id_en ) begin
+		debug_id_q <= debug_id_next;
 	end
 end
-assign mold_seq_num_o = mold_seq_q;
-assign mold_sid_o     = mold_sid_q;
+assign debug_id_o    = debug_id_q;
 `endif
 // message type : allways at offset 0
 assign itch_msg_type = data_q[LEN-1:0];

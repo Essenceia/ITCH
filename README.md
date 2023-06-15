@@ -16,14 +16,33 @@ To add the `End of Snapshot` message present only in the GLIMPSE extension the
 
 By default `GLIMPSE` should be defined.
 
-### MoldUPD64 session id and sequence number
+### DEBUG id
 
-To add internal flopping of the session id and sequence number information the
-`MOLD_MSG_IDS` macro need's to be defined.
+To help debuging, whenever the `DEBUG` flag is set an new identification
+number will be attacked to each message. This id is driven by the `debug_id_i`
+input and is outputed alongside the decoded message on `debug_id_o`.
 
-By default `MOLD_MSG_IDS` should be defined.
+This is used to keep track of individual itch messages in the top level
+testbench.
+
+By default `DEBUG` should be not defined.
 
 ## Test bench
+
+Normal run :
+```
+make run
+```
+
+( Optional ) Debug mode activated, defines `DEBUG` :
+```
+make run debug=1
+```
+
+Clean : 
+```
+make clean
+```
 
 ## Formal
 
