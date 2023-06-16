@@ -18,14 +18,14 @@ By default `GLIMPSE` should be defined.
 
 ### DEBUG id
 
-To help debuging, whenever the `DEBUG` flag is set an new identification
+To help debuging, whenever the `DEBUG_ID` flag is set an new identification
 number will be attacked to each message. This id is driven by the `debug_id_i`
 input and is outputed alongside the decoded message on `debug_id_o`.
 
 This is used to keep track of individual itch messages in the top level
 testbench.
 
-By default `DEBUG` should be not defined.
+By default `DEBUG_ID` should be not defined.
 
 ## Test bench
 
@@ -34,7 +34,7 @@ Normal run :
 make run
 ```
 
-( Optional ) Debug mode activated, defines `DEBUG` :
+( Optional ) Debug mode activated, defines `DEBUG` and `DEBUG_ID`:
 ```
 make run debug=1
 ```

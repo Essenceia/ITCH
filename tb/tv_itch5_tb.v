@@ -20,7 +20,7 @@ logic                  valid_i = 1'b0;
 logic                  start_i;
 logic [AXI_DATA_W-1:0] data_i;
 
-`ifdef DEBUG
+`ifdef DEBUG_ID
 logic [DEBUG_ID_W-1:0] debug_id_i;
 logic [DEBUG_ID_W-1:0] debug_id_o;
 `endif
@@ -230,7 +230,7 @@ logic itch_end_of_snapshot_v_o;
 logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o;
 
 
-`ifdef DEBUG
+`ifdef DEBUG_ID
 logic [DEBUG_ID_W-1:0] tb_debug_id;
 `endif
 
@@ -252,7 +252,7 @@ initial begin
 	#10
 	valid_i     = 1'b1;
 	start_i = 1'b1;
-	`ifdef DEBUG
+	`ifdef DEBUG_ID
 	tb_debug_id = { $random(), $random()};
 	debug_id_i  = tb_debug_id;
 	`endif
@@ -278,7 +278,7 @@ initial begin
 	// glimpse not supported, no message should have been seen
 	assert( ~m_uut.itch_msg_sent );
 `endif // GLIMPSE
-`ifdef DEBUG
+`ifdef DEBUG_ID
 	assert( debug_id_o == tb_debug_id );
 `endif
 	#20
@@ -297,7 +297,7 @@ m_uut(
 	.start_i(start_i),
 	.data_i(data_i),
 
-	`ifdef DEBUG
+	`ifdef DEBUG_ID
 	.debug_id_i(debug_id_i),    
 	.debug_id_o(debug_id_o),
 	`endif

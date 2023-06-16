@@ -6,7 +6,7 @@
  * This code is provided "as is" without any express or implied warranties. */ 
 
 module tv_itch5 #(
-	`ifdef DEBUG
+	`ifdef DEBUG_ID
 	parameter DEBUG_ID_W = 64,
 	`endif
 	parameter AXI_DATA_W = 64,
@@ -27,7 +27,7 @@ module tv_itch5 #(
 	input start_i,
 	input [AXI_DATA_W-1:0] data_i,
 
-	`ifdef DEBUG
+	`ifdef DEBUG_ID
 	// debug id associated with current message, used to track
 	// messages through pipeline for debug
 	input  [DEBUG_ID_W-1:0] debug_id_i,
@@ -253,7 +253,7 @@ logic                  data_cnt_en;
 // itch message type
 logic [LEN-1:0]        itch_msg_type;
 logic                  itch_msg_sent;
-`ifdef DEBUG
+`ifdef DEBUG_ID
 reg   [DEBUG_ID_W-1:0] debug_id_q;
 logic [DEBUG_ID_W-1:0] debug_id_next;
 logic                  debug_id_en;
@@ -311,7 +311,7 @@ generate
 	end
 endgenerate
 
-`ifdef DEBUG
+`ifdef DEBUG_ID
 assign debug_id_next = debug_id_i;
 assign debug_id_en   = valid_i & start_i;
 always @(posedge clk) begin
