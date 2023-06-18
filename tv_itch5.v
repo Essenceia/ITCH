@@ -564,6 +564,7 @@ always @(posedge clk) begin
 		for(int unsigned x = 0; x < CNT_MAX; x++ ) begin 
 			// assert( ~(data_cnt_q == x) | ( (data_cnt_q == x ) & ~$isunknown( data_q[AXI_DATA_W*x+AXI_DATA_W-1:AXI_DATA_W*x])));
 		end
+		sva_data_en_onehot0 : assert ( $onehot0(data_en));
 
 		// itch 
 		sva_xcheck_itch_system_event_v_o : assert( ~$isunknown(itch_system_event_v_o));
