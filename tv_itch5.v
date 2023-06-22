@@ -15,8 +15,12 @@ module tv_itch5 #(
 	// itch data
 	parameter LEN = 8,
 
-	parameter MSG_MAX_W = 50*LEN,// maximum length an itch message ( net order imbalance ) 
-	parameter CNT_MAX = 7,// $ceil(MSG_MAX_W / AXI_DATA_W) // maxium number of payloads that need to be received for the longest itch message 
+	// maximum length an itch message ( net order imbalance )
+	parameter MSG_MAX_W = 50*LEN, 
+
+	// maxium number of payloads that need to be received for the longest itch message 
+	// $ceil(MSG_MAX_W / AXI_DATA_W) 
+	parameter CNT_MAX = 7,
 	parameter CNT_MAX_W = $clog2(CNT_MAX)
 )(
 	input clk,
