@@ -29,7 +29,7 @@ def parse_valid(msg_name, msg_type, msg_len, if_itch_f, assign_f, tb_port_f, tb_
     lite_sig_name = msg_name + "_lite_v"
     early_sig_name =  msg_name + "_early_v"
     # get the ascii code for the message type
-    lite_sig_logic = "("+ITCH_MSG_TYPE_SIG + " == '"+msg_type+"')"
+    lite_sig_logic = "("+ITCH_MSG_TYPE_SIG + " == \""+msg_type+"\")"
     early_sig_logic = lite_sig_name +" & ("+MOLD_MSG_CNT_SIG+" == 'd1)" 
     sig_logic = lite_sig_name+" & ("+MOLD_MSG_CNT_SIG+" == 'd"+msg_len+")"
 
@@ -56,7 +56,7 @@ def parse_field(msg_name, field, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_ea
         sig_logic = MOLD_MSG_DATA_SIG+"[LEN*"+f_offset+"+LEN*"+f_len+"-1:LEN*"+f_offset+"]"
 
         if_itch_f.write("logic "+sig_dim+" "+sig_name+";\n")
-        assign_f.write("assign "+sig_name+" = "+sig_logic+";\n") 
+        assign_f.write("assign "+IF_ITCH+"."+sig_name+" = "+sig_logic+";\n") 
         tb_port_f.write("."+sig_name+"("+sig_name+"),\n")
         tb_sig_f.write("logic "+sig_dim+" "+sig_name+";\n")
 
