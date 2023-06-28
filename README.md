@@ -94,6 +94,11 @@ To add the `End of Snapshot` message present only in the GLIMPSE extension the
 
 By default `GLIMPSE` should be defined.
 
+## External modules
+
+This code calls for some external modules that can be found : [https://github.com/Essenceia/rtl_utils](https://github.com/Essenceia/rtl_utils)
+The makefile should point to this directory using `UTILS_DIR`.
+
 ## Test bench
 
 Normal run :
