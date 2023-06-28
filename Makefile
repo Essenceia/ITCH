@@ -25,6 +25,9 @@ formal: tv_itch5.v
 formal_wave: 
 	${VIEW} ${FORMAL_DIR}/formal_basic/engine_0/trace.vcd ${WAVE_CONF}
 
+interface: tv_itch5_if.v
+	iverilog ${FLAGS} -s tv_itch5_if ${DEFINES} -o ${BUILD}/tv_itch5_if tv_itch5_if.v ${TB_DIR}/tv_itch5_if.v
+
 test: ${TB_DIR}/tv_itch5_tb.v tv_itch5.v
 	iverilog ${FLAGS} -s tv_itch5_tb ${DEFINES} -o ${BUILD}/tb tv_itch5.v ${TB_DIR}/tv_itch5_tb.v
 

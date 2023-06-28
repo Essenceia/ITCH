@@ -11,24 +11,26 @@ module tv_itch5 #(
 	`endif
 	parameter AXI_DATA_W = 64,
 	parameter AXI_KEEP_W = AXI_DATA_W / 8,
+	parameter KEEP_LW    = $clog2(AXI_KEEP_W) + 1,
 	
 	// itch data
 	parameter LEN = 8,
 
 	// maximum length an itch message ( net order imbalance )
-	parameter MSG_MAX_W = 50*LEN, 
+	parameter MSG_MAX_N = 50*LEN, 
+	parameter MSG_MAX_W = $clog2(MSG_MAX_N+1), 
 
 	// maxium number of payloads that need to be received for the longest itch message 
-	// $ceil(MSG_MAX_W / AXI_DATA_W) 
-	parameter CNT_MAX = 7,
-	parameter CNT_MAX_W = $clog2(CNT_MAX)
+	parameter PL_MAX_N = 7, // $ceil(MSG_MAX_W / AXI_DATA_W)
+	parameter PL_MAX_W = $clog2(PL_MAX_N)
 )(
 	input clk,
 	input nreset,
 
 	//message
-	input valid_i,
-	input start_i,
+	input                  valid_i,
+	input                  start_i,
+	input [KEEP_LW-1:0]    len_i,
 	input [AXI_DATA_W-1:0] data_i,
 
 	`ifdef DEBUG_ID
@@ -247,11 +249,11 @@ module tv_itch5 #(
 // data storage
 reg   [MSG_MAX_W-1:0]  data_q;
 logic [MSG_MAX_W-1:0]  data_next;
-logic [CNT_MAX-1:0]    data_en; 
-// received counter
-reg   [CNT_MAX_W-1:0]  data_cnt_q;
-logic [CNT_MAX_W-1:0]  data_cnt_next;
-logic [CNT_MAX_W-1:0]  data_cnt_add;
+logic [PL_MAX_N-1:0]    data_en; 
+// received byte counter
+reg   [PL_MAX_W-1:0]  data_cnt_q;
+logic [PL_MAX_W-1:0]  data_cnt_next;
+logic [PL_MAX_W-1:0]  data_cnt_add;
 logic                  data_cnt_add_overflow;
 logic                  data_cnt_en;
 // itch message type
@@ -264,11 +266,11 @@ logic                  debug_id_en;
 `endif
 
 // count number of recieved packets
-assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {CNT_MAX_W-1{1'b0}}, valid_i};
+assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {PL_MAX_W-1{1'b0}}, valid_i};
 // reset to 1 when new msg start, can't set to 0 as we are implicity using
 // this counter as a valid signal  
-assign data_cnt_next = start_i ? { {CNT_MAX_W-1{1'b0}}, 1'b1 }  : 
-					   itch_msg_sent ? {CNT_MAX_W{1'b0}} : data_cnt_add; 
+assign data_cnt_next = start_i ? { {PL_MAX_W-1{1'b0}}, 1'b1 }  : 
+					   itch_msg_sent ? {PL_MAX_W{1'b0}} : data_cnt_add; 
 
 assign data_cnt_en = valid_i | itch_msg_sent;
 always @(posedge clk) begin
@@ -282,8 +284,8 @@ end
 genvar i;
 generate
 	// data_next
-	for( i = 0; i < CNT_MAX; i++ ) begin 
-		if ( i == CNT_MAX-1) begin
+	for( i = 0; i < PL_MAX_N; i++ ) begin 
+		if ( i == PL_MAX_N-1) begin
 			assign data_next[MSG_MAX_W-1:AXI_DATA_W*i] = data_i[(MSG_MAX_W-AXI_DATA_W*i-1):0];
 		end else begin
 			assign data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] = data_i;
@@ -297,10 +299,10 @@ generate
 			data_q[AXI_DATA_W-1:0] <= data_next[AXI_DATA_W-1:0];
 		end
 	end
-	for( i = 1; i < CNT_MAX; i++ ) begin
+	for( i = 1; i < PL_MAX_N; i++ ) begin
 		always @(posedge clk) begin
 			if ( data_en[i]) begin
-				if ( i == CNT_MAX-1) begin
+				if ( i == PL_MAX_N-1) begin
 					data_q[MSG_MAX_W-1:AXI_DATA_W*i] <= data_next[(MSG_MAX_W-AXI_DATA_W*i-1):0]; 
 				end else begin
 					data_q[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i] <= data_next[AXI_DATA_W*i+AXI_DATA_W-1:AXI_DATA_W*i]; 
@@ -310,7 +312,7 @@ generate
 	end
 	// data_en
 	assign data_en[0] = start_i & valid_i;
-	for( i = 1; i < CNT_MAX; i++) begin
+	for( i = 1; i < PL_MAX_N; i++) begin
 		assign data_en[i] = (( i + 1 ) == data_cnt_next ) & valid_i;
 	end
 endgenerate
@@ -565,7 +567,7 @@ always @(posedge clk) begin
 
 		// xcheck
 		sva_xcheck_data_cnt : assert ( ~$isunknown( |data_cnt_q ));
-		for(int unsigned x = 0; x < CNT_MAX; x++ ) begin 
+		for(int unsigned x = 0; x < PL_MAX_N; x++ ) begin 
 			// assert( ~(data_cnt_q == x) | ( (data_cnt_q == x ) & ~$isunknown( data_q[AXI_DATA_W*x+AXI_DATA_W-1:AXI_DATA_W*x])));
 		end
 		sva_data_en_onehot0 : assert ( $onehot0(data_en));
