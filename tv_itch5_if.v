@@ -206,4 +206,4 @@ interface tv_itch5_if#(
 	logic end_of_snapshot_v;
 	logic [20*LEN-1:0] end_of_snapshot_sequence_number;	
 	`endif
-endinterface
+endinterface : tv_itch5_if 

@@ -5,6 +5,7 @@ endif
 FORMAL_DIR=formal
 FORMAL_FILE=formal.sby
 TB_DIR=tb
+UTILS_DIR=../utils
 
 BUILD=build
 CONF=conf
@@ -26,7 +27,13 @@ formal_wave:
 	${VIEW} ${FORMAL_DIR}/formal_basic/engine_0/trace.vcd ${WAVE_CONF}
 
 interface: tv_itch5_if.v
-	iverilog ${FLAGS} -s tv_itch5_if ${DEFINES} -o ${BUILD}/tv_itch5_if tv_itch5_if.v ${TB_DIR}/tv_itch5_if.v
+	iverilog ${FLAGS} -s tv_itch5_if ${DEFINES} -o ${BUILD}/tv_itch5_if tv_itch5_if.v
+
+early_interface: tv_itch5_early_if.v
+	iverilog ${FLAGS} -s tv_itch5_early_if ${DEFINES} -o ${BUILD}/tv_itch5_early_if tv_itch5_early_if.v
+
+tv_itch5: interface early_interface
+	iverilog ${FLAGS} -s tv_itch5 ${DEFINES} -o ${BUILD}/tv_itch5 tv_itch5_if.v tv_itch5_early_if.v ${UTILS_DIR}/len_to_mask.v tv_itch5.v
 
 test: ${TB_DIR}/tv_itch5_tb.v tv_itch5.v
 	iverilog ${FLAGS} -s tv_itch5_tb ${DEFINES} -o ${BUILD}/tb tv_itch5.v ${TB_DIR}/tv_itch5_tb.v
