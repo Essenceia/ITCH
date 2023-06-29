@@ -5,9 +5,11 @@ import math
 
 # conf list
 PORT_FILE = "port_list.v"
+DEC_PORT_FILE = "dec_port_list.v"
 EARLY_PORT_FILE = "early_port_list.v"
 IF_ITCH_FILE = "if_itch.v"
 ASSIGN_LOGIC_FILE = "assign_logic.v"
+ASSIGN_MUX_LOGIC_FILE = "assign_mux_logic.v"
 ASSIGN_EARLY_LOGIC_FILE = "assign_early_logic.v"
 IF_EARLY_FILE = "if_early.v"
 FORMAL_FILE = "formal.v"
@@ -23,7 +25,7 @@ ITCH_MSG_TYPE_SIG="itch_msg_type"
 SIG_PREFIX="itch_"
 SVA_PREFIX="sva_"
 
-def parse_valid(msg_name, msg_type, msg_len, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_early_f, early_assign_f,port_f, early_port_f ):
+def parse_valid(msg_name, msg_type, msg_len, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_early_f, early_assign_f,port_f, early_port_f, assign_mux_f , dec_port_f):
     sig_name =SIG_PREFIX+ msg_name + "_v_o"
     lite_sig_name = msg_name + "_lite_v"
     early_sig_name =  SIG_PREFIX + msg_name + "_early_v_o"
@@ -41,12 +43,19 @@ def parse_valid(msg_name, msg_type, msg_len, if_itch_f, assign_f, tb_port_f, tb_
     tb_port_f.write("\n."+sig_name+"("+sig_name+"),\n") 
     tb_sig_f.write("\nlogic "+sig_name+";\n")
 
+    #mux
+    dec_sig_name = "dec_"+msg_name+"_v_i"
+    assign_mux_f.write("\nassign "+sig_name+" = |"+dec_sig_name+";\n")    
+
+    #top
+    dec_port_f.write("\n."+sig_name+"("+"dec_"+msg_name+"_v[i]),\n")
+    
     # early
     if_early_f.write("\nlogic "+early_sig_name+";\n")
     early_assign_f.write("\nassign "+early_sig_name+" = "+early_sig_logic+";\n")
     return sig_name
 
-def parse_field(msg_name, field, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_early_f, early_assign_f, port_f, early_port_f):
+def parse_field(msg_name, field, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_early_f, early_assign_f, port_f, early_port_f, assign_mux_f, dec_port_f ):
     f_name = field['@name']
     f_len  = field['@len']
     f_offset = field['@offset']
@@ -62,12 +71,28 @@ def parse_field(msg_name, field, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_ea
         tb_port_f.write("."+sig_name+"("+sig_name+"),\n")
         tb_sig_f.write("logic "+sig_dim+" "+sig_name+";\n")
 
+ 
         # early valid for the data
         early_sig_name =  SIG_PREFIX + msg_name+"_"+f_name+"_early_lite_v_o"
         if_early_f.write("logic "+early_sig_name+";\n")
         early_port_f.write("output logic "+early_sig_name+",\n")
         early_sig_logic = MOLD_MSG_CNT_SIG+" >= 'd"+str(int(f_offset)+int(f_len))
         early_assign_f.write("assign "+early_sig_name+" = "+early_sig_logic+";\n") 
+
+        #mux
+        dec_v_sig_name = "dec_"+msg_name+"_v_i"
+        dec_sig_name = "dec_"+msg_name+"_"+f_name+"_i"
+        len_str = f_len+"*LEN"
+        assign_mux_f.write("assign "+sig_name+" = ")
+        for i in range(2): 
+            if not( i == 0 ):
+                assign_mux_f.write("\n|") 
+            assign_mux_f.write("{"+len_str+"{"+dec_v_sig_name+"["+str(i)+"]}} & "+ dec_sig_name+"["+str(i)+"*"+len_str+"+"+len_str+"-1:"+str(i)+"*"+len_str+"]")    
+        assign_mux_f.write(";\n")       
+       
+        # top
+        dec_port_f.write("."+sig_name+"("+"dec_"+msg_name+"_"+f_name +"[i*"+len_str+"+"+len_str+"-1:i*"+len_str+"]),\n")
+
     return sig_name
 
 def formal_onehot0_valid(sig_arr, formal_f):
@@ -109,10 +134,12 @@ def main():
     
     # Open or create output files
     port_f = open(PORT_FILE,"w")
+    dec_port_f = open(DEC_PORT_FILE,"w")
     early_port_f = open(EARLY_PORT_FILE,"w")
     if_itch_f = open(IF_ITCH_FILE,"w")
     assign_f = open(ASSIGN_LOGIC_FILE,"w")
     early_assign_f = open(ASSIGN_EARLY_LOGIC_FILE,"w")
+    assign_mux_f = open(ASSIGN_MUX_LOGIC_FILE,"w")
     if_early_f = open(IF_EARLY_FILE,"w")
     formal_f = open(FORMAL_FILE,"w")
     tb_port_f = open(TB_PORT_LIST_FILE,"w")
@@ -131,7 +158,7 @@ def main():
         msg_name=struct['@name']
         msg_type=struct['@id']
         msg_len=struct['@len']
-        sig_v = parse_valid(msg_name , msg_type, msg_len, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_early_f , early_assign_f, port_f, early_port_f)
+        sig_v = parse_valid(msg_name , msg_type, msg_len, if_itch_f, assign_f, tb_port_f, tb_sig_f, if_early_f , early_assign_f, port_f, early_port_f, assign_mux_f, dec_port_f)
         formal_valid_xcheck(sig_v, formal_f)
         sig_v_arr.append(sig_v)
         # clear list
@@ -139,7 +166,7 @@ def main():
         for field in struct['Field']:
             #print(type(field))
             if type(field) is dict:
-                sig_field = parse_field(msg_name, field, if_itch_f, assign_f, tb_port_f, tb_sig_f,if_early_f , early_assign_f, port_f, early_port_f)
+                sig_field = parse_field(msg_name, field, if_itch_f, assign_f, tb_port_f, tb_sig_f,if_early_f , early_assign_f, port_f, early_port_f, assign_mux_f, dec_port_f)
                 if len(sig_field) > 0:
                     sig_field_arr.append(sig_field)
             else:
