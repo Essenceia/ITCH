@@ -32,8 +32,12 @@ interface: tv_itch5_if.v
 early_interface: tv_itch5_early_if.v
 	iverilog ${FLAGS} -s tv_itch5_early_if ${DEFINES} -o ${BUILD}/tv_itch5_early_if tv_itch5_early_if.v
 
-tv_itch5: interface early_interface
-	iverilog ${FLAGS} -s tv_itch5 ${DEFINES} -o ${BUILD}/tv_itch5 tv_itch5_if.v tv_itch5_early_if.v ${UTILS_DIR}/len_to_mask.v tv_itch5.v
+tv_itch5_dec: interface early_interface
+	iverilog ${FLAGS} -s tv_itch5_dec ${DEFINES} -o ${BUILD}/tv_itch5_dec tv_itch5_if.v tv_itch5_early_if.v ${UTILS_DIR}/len_to_mask.v tv_itch5_dec.v
+
+tv_itch5: tv_itch5_dec interface early_interface
+	iverilog ${FLAGS} -s tv_itch5 ${DEFINES} -o ${BUILD}/tv_itch5 tv_itch5_if.v tv_itch5_early_if.v ${UTILS_DIR}/len_to_mask.v tv_itch5_dec.v tv_itch5.v
+
 
 test: ${TB_DIR}/tv_itch5_tb.v tv_itch5.v
 	iverilog ${FLAGS} -s tv_itch5_tb ${DEFINES} -o ${BUILD}/tb tv_itch5.v ${TB_DIR}/tv_itch5_tb.v
