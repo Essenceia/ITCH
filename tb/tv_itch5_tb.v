@@ -13,12 +13,25 @@ reg nreset = 1'b0;
 localparam LEN = 8;
 localparam AXI_DATA_W = 64;
 localparam AXI_KEEP_W = AXI_DATA_W / 8;
+localparam KEEP_LW    = $clog2(AXI_KEEP_W) + 1;
+
+// overlap fields
+localparam OV_DATA_W  = 64-(2*LEN);//48
+localparam OV_KEEP_W  = (OV_DATA_W/8);//6
+localparam OV_KEEP_LW = 3;//$clog2(OV_KEEP_W+1),	
+
 
 localparam DEBUG_ID_W = 64;
 
 logic                  valid_i = 1'b0;
 logic                  start_i;
+logic [KEEP_LW-1:0]    len_i;
 logic [AXI_DATA_W-1:0] data_i;
+
+logic                  ov_valid_i = 1'b0;
+logic [OV_KEEP_LW-1:0] ov_len_i;
+logic [OV_DATA_W-1:0]  ov_data_i;
+
 
 `ifdef DEBUG_ID
 logic [DEBUG_ID_W-1:0] debug_id_i;
@@ -262,11 +275,13 @@ initial begin
 	tb_eos_data  = {  5{32'hFFFFFFFF}};
 	//tb_eos_data  = {5{32'hDEADBEAD}};
 	data_i  = { tb_eos_data[AXI_DATA_W-LEN-1:0], tb_msg_type };
+	len_i   = 'd8;
 	#10
 	start_i = 1'b0;
 	data_i  = tb_eos_data[AXI_DATA_W*2-LEN-1:AXI_DATA_W-LEN];
 	#10
 	data_i  = { {AXI_DATA_W*3-LEN*21-1{1'bx}} , tb_eos_data[LEN*20-1:AXI_DATA_W*2-LEN] };
+	len_i = 'd5;
 	#10
 	valid_i = 1'b0;
 	data_i = 'x;
@@ -288,14 +303,20 @@ initial begin
 	$finish;
 end
 
-tv_itch5 #( .LEN(LEN))
+tv_itch5_dec #( .LEN(LEN))
 m_uut(
 	.clk(clk),
 	.nreset(nreset),
 
 	.valid_i(valid_i),
 	.start_i(start_i),
-	.data_i(data_i),
+	.len_i  (len_i),
+	.data_i (data_i),
+
+	.ov_valid_i(ov_valid_i),
+	.ov_len_i  (ov_len_i),
+	.ov_data_i (ov_data_i),
+
 
 	`ifdef DEBUG_ID
 	.debug_id_i(debug_id_i),    

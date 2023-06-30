@@ -34,8 +34,8 @@ module tv_itch5 #(
 	`ifdef DEBUG_ID
 	// debug id associated with current message, used to track
 	// messages through pipeline for debug
-	input  [DEBUG_ID_W-1:0] debug_id_i,
-	output [DEBUG_ID_W-1:0] debug_id_o,
+	input  [ITCH_N*DEBUG_ID_W-1:0] debug_id_i,
+	output [DEBUG_ID_W-1:0]        debug_id_o,
 	`endif 
 
 	//message
