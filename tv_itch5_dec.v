@@ -600,7 +600,7 @@ logic [AXI_DATA_W-1:0] data_msb;
 
 assign data_overlap = |data_cnt_q[LEN_W-1:0]; 
 generate	
-	assign data_start_en[0] = start_i | ov_v_q | ~|data_cnt_next[MSG_MAX_W-1:LEN_W];  
+	assign data_start_en[0] = start_i | ov_v_q | ~|data_cnt_q[MSG_MAX_W-1:LEN_W];  
 	assign data_end_en[0]   = 1'b0; // not used
 	assign data_en[0]       = data_start_en[0]  & valid_i;
 	for(i=1; i<PL_MAX_N; i++) begin
@@ -1124,7 +1124,7 @@ assign itch_end_of_snapshot_sequence_number_early_lite_v_o = data_cnt_q >= 'd21;
 `ifdef DEBUG_ID
 // debug id
 assign debug_id_next = debug_id_i;
-assign debug_id_en   = valid_i & start_i;
+assign debug_id_en   = valid_i & ( start_i | ov_v_q ) ;
 always @(posedge clk) begin
 	if ( debug_id_en ) begin
 		debug_id_q <= debug_id_next;
