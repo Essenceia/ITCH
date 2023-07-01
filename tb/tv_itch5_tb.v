@@ -282,6 +282,25 @@ initial begin
 	#10
 	data_i  = { {AXI_DATA_W*3-LEN*21-1{1'bx}} , tb_eos_data[LEN*20-1:AXI_DATA_W*2-LEN] };
 	len_i = 'd5;
+ 	// overlap
+	ov_valid_i = 1'b1;
+	tb_msg_type = "A";
+	ov_data_i = { 'x , tb_msg_type};
+	ov_len_i = 'd1;
+	#10
+	ov_valid_i = 1'b0;
+	ov_len_i = 'x;
+	data_i =  {8{8'haa}};
+	len_i = 'd8;
+	#10
+	data_i =  {8{8'hbb}};
+	#10
+    data_i =  {8{8'hcc}};
+	#10
+	data_i =  {8{8'hdd}};
+	#10
+	data_i = { 'x, {3{8'hee}}};
+	len_i = 'd3;
 	#10
 	valid_i = 1'b0;
 	data_i = 'x;

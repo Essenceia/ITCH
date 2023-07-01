@@ -11,7 +11,7 @@ BUILD=build
 CONF=conf
 
 FLAGS=-Wall -g2012 -gassertions -gstrict-expr-width
-DEFINES=-DGLIMPSE $(if $(debug),-DDEBUG -DDEBUG_ID) 
+DEFINES=-DGLIMPSE -DEARLY $(if $(debug),-DDEBUG -DDEBUG_ID) 
 
 WAVE_FILE=wave.vcd
 WAVE_CONF=wave.conf

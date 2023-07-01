@@ -478,7 +478,7 @@ logic [OV_KEEP_LW-1:0] ov_len_next;
 reg   [OV_KEEP_LW-1:0] ov_len_q;
 logic [OV_DATA_W-1:0]  ov_data_next;
 reg   [OV_DATA_W-1:0]  ov_data_q;
-logic [KEEP_LW-1:0]    ov_data_cnt_add;
+logic [KEEP_LW-2:0]    ov_data_cnt_add;
 logic                  ov_data_cnt_add_overflow;
 
 
@@ -507,7 +507,7 @@ end
  
 // count number of recieved bytes
 assign { data_cnt_add_overflow, data_cnt_add } = data_cnt_q + { {MSG_MAX_W-KEEP_LW{1'b0}}, len_i};
-assign { ov_data_cnt_add_overflow, ov_data_cnt_add} = {{OV_KEEP_LW_DIFF{1'b0}} , ov_data_q} + len_i;
+assign { ov_data_cnt_add_overflow, ov_data_cnt_add} = {{OV_KEEP_LW_DIFF{1'b0}} , ov_len_q} + len_i;
 // reset to 1 when new msg start, can't set to 0 as we are implicity using
 // this counter as a valid signal  
 assign data_cnt_next = start_i ? { {MSG_MAX_W-KEEP_LW{1'b0}}, len_i }  
@@ -533,15 +533,15 @@ m_itch_len_to_mask(
 genvar i;
 generate
 	for(i=0; i<AXI_KEEP_W;i++) begin
-		assign data_mask[i] = {LEN{data_mask_lite[i]}};
+		assign data_mask[i*LEN+LEN-1:i*LEN] = {LEN{data_mask_lite[i]}};
 	end
 endgenerate
 
 
 // overflow mask
-logic [OV_KEEP_LW]     ov_len;
-logic [OV_KEEP_W-1:0]  ov_data_mask_lite;
-logic [AXI_DATA_W-1:0] ov_data_mask;
+logic [OV_KEEP_LW]        ov_len;
+logic [OV_KEEP_W-1:0  ]   ov_data_mask_lite;
+logic [OV_KEEP_W*LEN-1:0] ov_data_mask;
 
 assign ov_len = ov_len_q & { OV_KEEP_LW{ ov_v_q }};
 len_to_mask #(.LEN_W(OV_KEEP_LW), .LEN_MAX(OV_KEEP_W) )
@@ -551,22 +551,23 @@ m_itch_ov_len_to_mask(
 );
 generate
 	for(i=0; i<OV_KEEP_W;i++) begin
-		assign ov_data_mask[i] = {LEN{ ov_data_mask_lite[i]}};
+		assign ov_data_mask[i*LEN+LEN-1:i*LEN] = {LEN{ ov_data_mask_lite[i]}};
 	end
 endgenerate
 
 // shift received bytes into the correct position
 // data_shifted unused bits are writen to x
-logic [KEEP_LW-1:0]      data_off;
+localparam OFF_W = $clog2(AXI_DATA_W/AXI_KEEP_W);
+logic [OFF_W-1:0]        data_off;
 logic [2*AXI_DATA_W-1:0] data_mask_shifted_arr[AXI_KEEP_W-1:0];
 logic [2*AXI_DATA_W-1:0] data_shifted_arr[AXI_KEEP_W-1:0];
 logic [2*AXI_DATA_W-1:0] data_mask_shifted;
 logic [2*AXI_DATA_W-1:0] data_shifted;
 
 
-assign data_off = { KEEP_LW{start_i}} & 'd0 
-				| { KEEP_LW{ov_v_q }} & { {OV_KEEP_LW_DIFF-1{1'b0}}, ov_len_q}
-				| { KEEP_LW{~start_i&~ov_v_q}} & data_cnt_q[KEEP_LW-1:0]; 
+assign data_off = { OFF_W{start_i}} & 'd0 
+				| { OFF_W{ov_v_q }} &  ov_len_q[OFF_W-1:0]
+				| { OFF_W{~start_i&~ov_v_q}} & data_cnt_q[OFF_W-1:0]; 
 generate
 	for(i=0; i<AXI_KEEP_W; i++)begin
 		assign data_mask_shifted_arr[i] = { {AXI_DATA_W-i*LEN{1'b0}}, data_mask,{i*LEN{1'b0}}};
@@ -594,46 +595,64 @@ logic                 cnt_end_offset;
 logic                 data_overlap; // overlap on 8 byte data boundary
 
 logic [PL_MAX_N*AXI_DATA_W-1:MSG_MAX_N] data_next_unused;
+logic [AXI_DATA_W-1:0] data_lsb;
+logic [AXI_DATA_W-1:0] data_msb;
 
-assign data_overlap = ~|data_cnt_next[LEN_W-1:0]; 
+assign data_overlap = |data_cnt_q[LEN_W-1:0]; 
 generate	
-	assign data_start_en[0] = ~|data_cnt_next[MSG_MAX_W-1:LEN_W];  
-	assign data_end_en[0]   = ( data_cnt_next[MSG_MAX_W-1:LEN_W] == 0 );
-	assign data_en[0]       = ( data_start_en[0] | data_end_en[0] ) & valid_i;
+	assign data_start_en[0] = start_i | ov_v_q | ~|data_cnt_next[MSG_MAX_W-1:LEN_W];  
+	assign data_end_en[0]   = 1'b0; // not used
+	assign data_en[0]       = data_start_en[0]  & valid_i;
 	for(i=1; i<PL_MAX_N; i++) begin
 		// enable
 		if ( i == 1 ) begin
 			assign data_start_en[1] = ( ov_v_q & ov_data_cnt_add_overflow )
 								    | ( data_cnt_q[MSG_MAX_W-1:LEN_W] == i ); 
 		end else begin
-			assign data_start_en[i] = ( data_cnt_q[MSG_MAX_W-1:LEN_W] == i ); 
+			assign data_start_en[i] = ( data_cnt_q[MSG_MAX_W-1:LEN_W] == i ) & ~( start_i | ov_v_q ); 
 		end
-		assign data_end_en[i]   = ( data_cnt_next[MSG_MAX_W-1:LEN_W] == i );
+		if ( i == 2 ) begin
+			assign data_end_en[i]   = ( data_start_en[1] & data_overlap  ) &  ~ov_v_q;
+		end else begin
+			assign data_end_en[i]   = ( data_start_en[i-1] & data_overlap  );
+		end	
 		assign data_en[i] = ( data_start_en[i] | data_end_en[i] ) & valid_i;
 	end
 
 	// first payload
-	assign data_next[AXI_DATA_W-1:0] = data_mask_shifted[AXI_DATA_W-1:0] & data_shifted[AXI_DATA_W-1:0] 
+	logic [AXI_DATA_W-1:0] data_mask_flopped_lsb;
+	assign data_mask_flopped_lsb = ~{ data_mask_shifted[AXI_DATA_W-1:OV_DATA_W], ov_data_mask | data_mask_shifted[OV_DATA_W-1:0] };
+	
+	assign data_next[AXI_DATA_W-1:0] = data_mask_flopped_lsb & data_q[AXI_DATA_W-1:0]
+									 | data_mask_shifted[AXI_DATA_W-1:0]  & data_shifted[AXI_DATA_W-1:0] 
 									 | {{AXI_DATA_W-OV_DATA_W{1'b0}}, ov_data_mask & ov_data_q} ;
 	always @(posedge clk) begin
 		if(data_en[0]) begin
 				data_q[AXI_DATA_W-1:0] <= data_next[AXI_DATA_W-1:0]; 
 		end
 	end
+	assign data_lsb = data_shifted[AXI_DATA_W-1:0] & data_mask_shifted[AXI_DATA_W-1:0];
+	assign data_msb = data_shifted[2*AXI_DATA_W-1:AXI_DATA_W] & data_mask_shifted[2*AXI_DATA_W-1:AXI_DATA_W];
 
 	for(i=1; i<PL_MAX_N; i++) begin
 		if ( i == PL_MAX_N -1 ) begin
-			assign { data_next_unused , data_next[MSG_MAX_N-1:i*AXI_DATA_W] } =	data_overlap ?
-				data_shifted[2*AXI_DATA_W-1:AXI_DATA_W] : data_shifted[AXI_DATA_W-1:0];
-		end else begin
-			assign data_next[i*AXI_DATA_W+AXI_DATA_W-1:i*AXI_DATA_W] = data_overlap ?
-				data_shifted[2*AXI_DATA_W-1:AXI_DATA_W] : data_shifted[AXI_DATA_W-1:0];
-		end
-		always @(posedge clk) begin
-			if(data_en[i]) begin
-				if ( i == PL_MAX_N-1 ) begin 
+			assign { data_next_unused, data_next[MSG_MAX_N-1:i*AXI_DATA_W] } =	data_end_en[i] ?
+			  ( data_q[MSG_MAX_N-1:i*AXI_DATA_W]        & ~data_mask_shifted[2*AXI_DATA_W-1:AXI_DATA_W] ) 
+			 |( data_shifted[2*AXI_DATA_W-1:AXI_DATA_W] &  data_mask_shifted[2*AXI_DATA_W-1:AXI_DATA_W] )
+			 :( data_q[MSG_MAX_N-1:i*AXI_DATA_W]        & ~data_mask_shifted[AXI_DATA_W-1:0] ) 
+			 |( data_shifted[AXI_DATA_W-1:0]            &  data_mask_shifted[AXI_DATA_W-1:0] );
+			always @(posedge clk) begin
+				if(data_en[PL_MAX_N-1]) begin
 					data_q[MSG_MAX_N-1:i*AXI_DATA_W] <= data_next[MSG_MAX_N-1:i*AXI_DATA_W]; 
-				end else begin
+				end
+			end
+		end else begin
+			assign data_next[i*AXI_DATA_W+AXI_DATA_W-1:i*AXI_DATA_W] = data_end_en[i] ? 
+			        ( data_q[i*AXI_DATA_W+AXI_DATA_W-1:i*AXI_DATA_W] & ~data_mask_shifted[2*AXI_DATA_W-1:AXI_DATA_W] ) | data_msb
+			       :( data_q[i*AXI_DATA_W+AXI_DATA_W-1:i*AXI_DATA_W] & ~data_mask_shifted[AXI_DATA_W-1:0]            ) | data_lsb;
+		//		data_shifted[2*AXI_DATA_W-1:AXI_DATA_W] : data_shifted[AXI_DATA_W-1:0];
+			always @(posedge clk) begin
+				if(data_en[i]) begin
 					data_q[i*AXI_DATA_W+AXI_DATA_W-1:i*AXI_DATA_W] <= data_next[i*AXI_DATA_W+AXI_DATA_W-1:i*AXI_DATA_W]; 
 				end
 			end
@@ -887,18 +906,21 @@ assign itch_retail_price_improvement_indicator_timestamp_o = data_q[LEN*5+LEN*6-
 assign itch_retail_price_improvement_indicator_stock_o = data_q[LEN*11+LEN*8-1:LEN*11];
 assign itch_retail_price_improvement_indicator_interest_flag_o = data_q[LEN*19+LEN*1-1:LEN*19];
 
+`ifdef GLIMPSE
 logic end_of_snapshot_lite_v;
 assign end_of_snapshot_lite_v = (itch_msg_type == "G");
 assign itch_end_of_snapshot_v_o = end_of_snapshot_lite_v & (data_cnt_q == 'd21);
 assign itch_end_of_snapshot_sequence_number_o = data_q[LEN*1+LEN*20-1:LEN*1];
+`endif
+
 `ifdef EARLY
-assign itch_system_event_early_v_o = system_event_lite_v & (data_cnt_q == 'd1);
+assign itch_system_event_early_v_o = system_event_lite_v & (data_cnt_q  >= 'd1);
 assign itch_system_event_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_system_event_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_system_event_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_system_event_event_code_early_lite_v_o = data_cnt_q >= 'd12;
 
-assign itch_stock_directory_early_v_o = stock_directory_lite_v & (data_cnt_q == 'd1);
+assign itch_stock_directory_early_v_o = stock_directory_lite_v & (data_cnt_q  >= 'd1);
 assign itch_stock_directory_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_stock_directory_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_stock_directory_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -917,7 +939,7 @@ assign itch_stock_directory_etp_flag_early_lite_v_o = data_cnt_q >= 'd34;
 assign itch_stock_directory_etp_leverage_factor_early_lite_v_o = data_cnt_q >= 'd38;
 assign itch_stock_directory_inverse_indicator_early_lite_v_o = data_cnt_q >= 'd39;
 
-assign itch_stock_trading_action_early_v_o = stock_trading_action_lite_v & (data_cnt_q == 'd1);
+assign itch_stock_trading_action_early_v_o = stock_trading_action_lite_v & (data_cnt_q  >= 'd1);
 assign itch_stock_trading_action_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_stock_trading_action_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_stock_trading_action_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -926,14 +948,14 @@ assign itch_stock_trading_action_trading_state_early_lite_v_o = data_cnt_q >= 'd
 assign itch_stock_trading_action_reserved_early_lite_v_o = data_cnt_q >= 'd21;
 assign itch_stock_trading_action_reason_early_lite_v_o = data_cnt_q >= 'd25;
 
-assign itch_reg_sho_restriction_early_v_o = reg_sho_restriction_lite_v & (data_cnt_q == 'd1);
+assign itch_reg_sho_restriction_early_v_o = reg_sho_restriction_lite_v & (data_cnt_q  >= 'd1);
 assign itch_reg_sho_restriction_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_reg_sho_restriction_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_reg_sho_restriction_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_reg_sho_restriction_stock_early_lite_v_o = data_cnt_q >= 'd19;
 assign itch_reg_sho_restriction_reg_sho_action_early_lite_v_o = data_cnt_q >= 'd20;
 
-assign itch_market_participant_position_early_v_o = market_participant_position_lite_v & (data_cnt_q == 'd1);
+assign itch_market_participant_position_early_v_o = market_participant_position_lite_v & (data_cnt_q  >= 'd1);
 assign itch_market_participant_position_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_market_participant_position_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_market_participant_position_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -943,7 +965,7 @@ assign itch_market_participant_position_primary_market_maker_early_lite_v_o = da
 assign itch_market_participant_position_market_maker_mode_early_lite_v_o = data_cnt_q >= 'd25;
 assign itch_market_participant_position_market_participant_state_early_lite_v_o = data_cnt_q >= 'd26;
 
-assign itch_mwcb_decline_level_early_v_o = mwcb_decline_level_lite_v & (data_cnt_q == 'd1);
+assign itch_mwcb_decline_level_early_v_o = mwcb_decline_level_lite_v & (data_cnt_q  >= 'd1);
 assign itch_mwcb_decline_level_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_mwcb_decline_level_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_mwcb_decline_level_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -951,13 +973,13 @@ assign itch_mwcb_decline_level_level_1_early_lite_v_o = data_cnt_q >= 'd19;
 assign itch_mwcb_decline_level_level_2_early_lite_v_o = data_cnt_q >= 'd27;
 assign itch_mwcb_decline_level_level_3_early_lite_v_o = data_cnt_q >= 'd35;
 
-assign itch_mwcb_status_early_v_o = mwcb_status_lite_v & (data_cnt_q == 'd1);
+assign itch_mwcb_status_early_v_o = mwcb_status_lite_v & (data_cnt_q  >= 'd1);
 assign itch_mwcb_status_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_mwcb_status_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_mwcb_status_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_mwcb_status_breached_level_early_lite_v_o = data_cnt_q >= 'd12;
 
-assign itch_ipo_quoting_period_update_early_v_o = ipo_quoting_period_update_lite_v & (data_cnt_q == 'd1);
+assign itch_ipo_quoting_period_update_early_v_o = ipo_quoting_period_update_lite_v & (data_cnt_q  >= 'd1);
 assign itch_ipo_quoting_period_update_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_ipo_quoting_period_update_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_ipo_quoting_period_update_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -966,7 +988,7 @@ assign itch_ipo_quoting_period_update_ipo_quotation_release_time_early_lite_v_o 
 assign itch_ipo_quoting_period_update_ipo_quotation_release_qualifier_early_lite_v_o = data_cnt_q >= 'd24;
 assign itch_ipo_quoting_period_update_ipo_price_early_lite_v_o = data_cnt_q >= 'd28;
 
-assign itch_luld_auction_collar_early_v_o = luld_auction_collar_lite_v & (data_cnt_q == 'd1);
+assign itch_luld_auction_collar_early_v_o = luld_auction_collar_lite_v & (data_cnt_q  >= 'd1);
 assign itch_luld_auction_collar_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_luld_auction_collar_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_luld_auction_collar_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -976,7 +998,7 @@ assign itch_luld_auction_collar_upper_auction_collar_price_early_lite_v_o = data
 assign itch_luld_auction_collar_lower_auction_collar_price_early_lite_v_o = data_cnt_q >= 'd31;
 assign itch_luld_auction_collar_auction_collar_extension_early_lite_v_o = data_cnt_q >= 'd35;
 
-assign itch_operational_halt_early_v_o = operational_halt_lite_v & (data_cnt_q == 'd1);
+assign itch_operational_halt_early_v_o = operational_halt_lite_v & (data_cnt_q  >= 'd1);
 assign itch_operational_halt_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_operational_halt_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_operational_halt_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -984,7 +1006,7 @@ assign itch_operational_halt_stock_early_lite_v_o = data_cnt_q >= 'd19;
 assign itch_operational_halt_market_code_early_lite_v_o = data_cnt_q >= 'd20;
 assign itch_operational_halt_operational_halt_action_early_lite_v_o = data_cnt_q >= 'd21;
 
-assign itch_add_order_early_v_o = add_order_lite_v & (data_cnt_q == 'd1);
+assign itch_add_order_early_v_o = add_order_lite_v & (data_cnt_q  >= 'd1);
 assign itch_add_order_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_add_order_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_add_order_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -994,7 +1016,7 @@ assign itch_add_order_shares_early_lite_v_o = data_cnt_q >= 'd24;
 assign itch_add_order_stock_early_lite_v_o = data_cnt_q >= 'd32;
 assign itch_add_order_price_early_lite_v_o = data_cnt_q >= 'd36;
 
-assign itch_add_order_with_mpid_early_v_o = add_order_with_mpid_lite_v & (data_cnt_q == 'd1);
+assign itch_add_order_with_mpid_early_v_o = add_order_with_mpid_lite_v & (data_cnt_q  >= 'd1);
 assign itch_add_order_with_mpid_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_add_order_with_mpid_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_add_order_with_mpid_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1005,7 +1027,7 @@ assign itch_add_order_with_mpid_stock_early_lite_v_o = data_cnt_q >= 'd32;
 assign itch_add_order_with_mpid_price_early_lite_v_o = data_cnt_q >= 'd36;
 assign itch_add_order_with_mpid_attribution_early_lite_v_o = data_cnt_q >= 'd40;
 
-assign itch_order_executed_early_v_o = order_executed_lite_v & (data_cnt_q == 'd1);
+assign itch_order_executed_early_v_o = order_executed_lite_v & (data_cnt_q  >= 'd1);
 assign itch_order_executed_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_order_executed_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_order_executed_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1013,7 +1035,7 @@ assign itch_order_executed_order_reference_number_early_lite_v_o = data_cnt_q >=
 assign itch_order_executed_executed_shares_early_lite_v_o = data_cnt_q >= 'd23;
 assign itch_order_executed_match_number_early_lite_v_o = data_cnt_q >= 'd31;
 
-assign itch_order_executed_with_price_early_v_o = order_executed_with_price_lite_v & (data_cnt_q == 'd1);
+assign itch_order_executed_with_price_early_v_o = order_executed_with_price_lite_v & (data_cnt_q  >= 'd1);
 assign itch_order_executed_with_price_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_order_executed_with_price_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_order_executed_with_price_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1023,20 +1045,20 @@ assign itch_order_executed_with_price_match_number_early_lite_v_o = data_cnt_q >
 assign itch_order_executed_with_price_printable_early_lite_v_o = data_cnt_q >= 'd32;
 assign itch_order_executed_with_price_execution_price_early_lite_v_o = data_cnt_q >= 'd36;
 
-assign itch_order_cancel_early_v_o = order_cancel_lite_v & (data_cnt_q == 'd1);
+assign itch_order_cancel_early_v_o = order_cancel_lite_v & (data_cnt_q  >= 'd1);
 assign itch_order_cancel_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_order_cancel_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_order_cancel_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_order_cancel_order_reference_number_early_lite_v_o = data_cnt_q >= 'd19;
 assign itch_order_cancel_cancelled_shares_early_lite_v_o = data_cnt_q >= 'd23;
 
-assign itch_order_delete_early_v_o = order_delete_lite_v & (data_cnt_q == 'd1);
+assign itch_order_delete_early_v_o = order_delete_lite_v & (data_cnt_q  >= 'd1);
 assign itch_order_delete_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_order_delete_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_order_delete_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_order_delete_order_reference_number_early_lite_v_o = data_cnt_q >= 'd19;
 
-assign itch_order_replace_early_v_o = order_replace_lite_v & (data_cnt_q == 'd1);
+assign itch_order_replace_early_v_o = order_replace_lite_v & (data_cnt_q  >= 'd1);
 assign itch_order_replace_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_order_replace_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_order_replace_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1045,7 +1067,7 @@ assign itch_order_replace_new_order_reference_number_early_lite_v_o = data_cnt_q
 assign itch_order_replace_shares_early_lite_v_o = data_cnt_q >= 'd31;
 assign itch_order_replace_price_early_lite_v_o = data_cnt_q >= 'd35;
 
-assign itch_trade_early_v_o = trade_lite_v & (data_cnt_q == 'd1);
+assign itch_trade_early_v_o = trade_lite_v & (data_cnt_q  >= 'd1);
 assign itch_trade_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_trade_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_trade_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1056,7 +1078,7 @@ assign itch_trade_stock_early_lite_v_o = data_cnt_q >= 'd32;
 assign itch_trade_price_early_lite_v_o = data_cnt_q >= 'd36;
 assign itch_trade_match_number_early_lite_v_o = data_cnt_q >= 'd44;
 
-assign itch_cross_trade_early_v_o = cross_trade_lite_v & (data_cnt_q == 'd1);
+assign itch_cross_trade_early_v_o = cross_trade_lite_v & (data_cnt_q  >= 'd1);
 assign itch_cross_trade_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_cross_trade_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_cross_trade_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1066,13 +1088,13 @@ assign itch_cross_trade_cross_price_early_lite_v_o = data_cnt_q >= 'd31;
 assign itch_cross_trade_match_number_early_lite_v_o = data_cnt_q >= 'd39;
 assign itch_cross_trade_cross_type_early_lite_v_o = data_cnt_q >= 'd40;
 
-assign itch_broken_trade_early_v_o = broken_trade_lite_v & (data_cnt_q == 'd1);
+assign itch_broken_trade_early_v_o = broken_trade_lite_v & (data_cnt_q  >= 'd1);
 assign itch_broken_trade_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_broken_trade_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_broken_trade_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_broken_trade_match_number_early_lite_v_o = data_cnt_q >= 'd19;
 
-assign itch_net_order_imbalance_indicator_early_v_o = net_order_imbalance_indicator_lite_v & (data_cnt_q == 'd1);
+assign itch_net_order_imbalance_indicator_early_v_o = net_order_imbalance_indicator_lite_v & (data_cnt_q  >= 'd1);
 assign itch_net_order_imbalance_indicator_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_net_order_imbalance_indicator_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_net_order_imbalance_indicator_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1086,7 +1108,7 @@ assign itch_net_order_imbalance_indicator_current_reference_price_early_lite_v_o
 assign itch_net_order_imbalance_indicator_cross_type_early_lite_v_o = data_cnt_q >= 'd49;
 assign itch_net_order_imbalance_indicator_price_variation_indicator_early_lite_v_o = data_cnt_q >= 'd50;
 
-assign itch_retail_price_improvement_indicator_early_v_o = retail_price_improvement_indicator_lite_v & (data_cnt_q == 'd1);
+assign itch_retail_price_improvement_indicator_early_v_o = retail_price_improvement_indicator_lite_v & (data_cnt_q  >= 'd1);
 assign itch_retail_price_improvement_indicator_stock_locate_early_lite_v_o = data_cnt_q >= 'd3;
 assign itch_retail_price_improvement_indicator_tracking_number_early_lite_v_o = data_cnt_q >= 'd5;
 assign itch_retail_price_improvement_indicator_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
@@ -1094,7 +1116,7 @@ assign itch_retail_price_improvement_indicator_stock_early_lite_v_o = data_cnt_q
 assign itch_retail_price_improvement_indicator_interest_flag_early_lite_v_o = data_cnt_q >= 'd20;
 
 `ifdef GLIMPSE
-assign itch_end_of_snapshot_early_v_o = end_of_snapshot_lite_v & (data_cnt_q == 'd1);
+assign itch_end_of_snapshot_early_v_o = end_of_snapshot_lite_v & (data_cnt_q >= 'd1);
 assign itch_end_of_snapshot_sequence_number_early_lite_v_o = data_cnt_q >= 'd21;
 `endif // GLIMPSE
 `endif // EARLY
