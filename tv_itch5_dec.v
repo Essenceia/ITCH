@@ -490,6 +490,10 @@ reg   [DEBUG_ID_W-1:0] debug_id_q;
 logic [DEBUG_ID_W-1:0] debug_id_next;
 logic                  debug_id_en;
 `endif
+reg                    valid_q;
+always @(posedge clk) begin
+	valid_q <= valid_i;
+end
 
 // overlap logic : delay writing to data by 1 cycle
 assign ov_v_next    = ov_valid_i;
@@ -515,7 +519,7 @@ assign data_cnt_next =  { KEEP_LW{ start_i}} &  len_i
 					  | { KEEP_LW{ ov_v_q }} & { ov_data_cnt_add_overflow, ov_data_cnt_add }
 					  | { MSG_MAX_W{ ~start_i & ~ov_v_q}} & data_cnt_add; 
 
-assign data_cnt_en = valid_i | itch_msg_sent;
+assign data_cnt_en = valid_i | valid_q;
 always @(posedge clk) begin
 	if ( ~nreset ) begin
 		data_cnt_q <= 1'b0;
