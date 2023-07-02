@@ -598,7 +598,7 @@ logic [PL_MAX_N*AXI_DATA_W-1:MSG_MAX_N] data_next_unused;
 logic [AXI_DATA_W-1:0] data_lsb;
 logic [AXI_DATA_W-1:0] data_msb;
 
-assign data_overlap = |data_cnt_q[LEN_W-1:0]; 
+assign data_overlap = |data_cnt_next[LEN_W-1:0]; 
 generate	
 	assign data_start_en[0] = start_i | ov_v_q | ~|data_cnt_q[MSG_MAX_W-1:LEN_W];  
 	assign data_end_en[0]   = 1'b0; // not used
@@ -624,7 +624,7 @@ generate
 	assign data_mask_flopped_lsb = ~{ data_mask_shifted[AXI_DATA_W-1:OV_DATA_W], ov_data_mask | data_mask_shifted[OV_DATA_W-1:0] };
 	
 	assign data_next[AXI_DATA_W-1:0] = data_mask_flopped_lsb & data_q[AXI_DATA_W-1:0]
-									 | data_mask_shifted[AXI_DATA_W-1:0]  & data_shifted[AXI_DATA_W-1:0] 
+									 | data_lsb 
 									 | {{AXI_DATA_W-OV_DATA_W{1'b0}}, ov_data_mask & ov_data_q} ;
 	always @(posedge clk) begin
 		if(data_en[0]) begin
