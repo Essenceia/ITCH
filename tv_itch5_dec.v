@@ -512,7 +512,8 @@ assign { ov_data_cnt_add_overflow, ov_data_cnt_add} = {{OV_KEEP_LW_DIFF{1'b0}} ,
 // this counter as a valid signal  
 assign data_cnt_next = start_i ? { {MSG_MAX_W-KEEP_LW{1'b0}}, len_i }  
 					 : ov_v_q ? { {MSG_MAX_W-KEEP_LW-1{1'b0}} ,{ ov_data_cnt_add_overflow, ov_data_cnt_add }}
-					 : itch_msg_sent ? {PL_MAX_W{1'b0}} : data_cnt_add; 
+					// : itch_msg_sent ? {PL_MAX_W{1'b0}} : data_cnt_add; 
+					 : data_cnt_add; 
 
 assign data_cnt_en = valid_i | itch_msg_sent;
 always @(posedge clk) begin
