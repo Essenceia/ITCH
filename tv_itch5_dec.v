@@ -539,7 +539,7 @@ endgenerate
 
 
 // overflow mask
-logic [OV_KEEP_LW]        ov_len;
+logic [OV_KEEP_LW-1:0]    ov_len;
 logic [OV_KEEP_W-1:0  ]   ov_data_mask_lite;
 logic [OV_KEEP_W*LEN-1:0] ov_data_mask;
 
