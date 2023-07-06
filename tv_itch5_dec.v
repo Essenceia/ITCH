@@ -592,9 +592,9 @@ localparam LEN_W = $clog2(LEN);
 
 reg   [MSG_MAX_N-1:0] data_q;
 logic [MSG_MAX_N-1:0] data_next;
-logic [PL_MAX_N-1:0]  data_en;
-logic [PL_MAX_N-1:0]  data_start_en; 
-logic [PL_MAX_N-1:0]  data_end_en; 
+logic [PL_MAX_N-1:0]  data_en; 
+logic [PL_MAX_N-1:0]  data_start_en;  /* synthesis keep */  
+logic [PL_MAX_N-1:0]  data_end_en;/* synthesis keep */ 
 logic [MSG_MAX_W-1:0] cnt_end;
 logic                 cnt_end_offset;
 logic                 data_overlap; // overlap on 8 byte data boundary
