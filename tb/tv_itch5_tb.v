@@ -265,21 +265,29 @@ initial begin
 	#10
 	valid_i = 1'b1;
 	start_i = 1'b1;
+
 	`ifdef DEBUG_ID
 	tb_debug_id = { $random(), $random()};
 	debug_id_i  = tb_debug_id;
 	`endif
+
 	// send simple end of snapshot msg, len = 21 bytes
 	// will be sent over the next 3 cycles
 	tb_msg_type  = "G"; 
 	tb_eos_data  = {  5{32'hFFFFFFFF}};
-	//tb_eos_data  = {5{32'hDEADBEAD}};
-	data_i  = { tb_eos_data[AXI_DATA_W-LEN-1:0], tb_msg_type };
-	len_i   = 'd8;
+	data_i       = { tb_eos_data[AXI_DATA_W-LEN-1:0], tb_msg_type };
+	len_i        = 'd8;
+
 	#10
+
+	// eos msg part 2/3
 	start_i = 1'b0;
 	data_i  = tb_eos_data[AXI_DATA_W*2-LEN-1:AXI_DATA_W-LEN];
+	
 	#10
+	
+	// eos msg part 3/3 + overlap with start of new mold msg of type add order
+
 	data_i  = { {AXI_DATA_W*3-LEN*21-1{1'bx}} , tb_eos_data[LEN*20-1:AXI_DATA_W*2-LEN] };
 	len_i = 'd5;
  	// overlap
@@ -287,31 +295,52 @@ initial begin
 	tb_msg_type = "A";
 	ov_data_i = { 'x , tb_msg_type};
 	ov_len_i = 'd1;
+
 	#10
+
+	// add order 2/6
 	ov_valid_i = 1'b0;
 	ov_len_i = 'x;
 	data_i =  {8{8'haa}};
 	len_i = 'd8;
-	#10
-	data_i =  {8{8'hbb}};
-	#10
-    data_i =  {8{8'hcc}};
-	#10
-	data_i =  {8{8'hdd}};
-	#10
-	data_i = { 'x, {3{8'hee}}};
-	len_i = 'd3;
-	#10
-	valid_i = 1'b0;
-	data_i = 'x;
-	// check results
-`ifdef GLIMPSE
+
+	#5
+	`ifdef GLIMPSE
+	$display("Testing glimpse decode");
 	assert( itch_end_of_snapshot_v_o );
 	assert( itch_end_of_snapshot_sequence_number_o == tb_eos_data );
-`else
+	`else
 	// glimpse not supported, no message should have been seen
 	assert( ~m_uut.itch_msg_sent );
-`endif // GLIMPSE
+	`endif // GLIMPSE
+	#5
+	
+	// add order 3/6
+	data_i =  {8{8'hbb}};
+
+	#10
+
+
+	// add order 4/6
+    data_i =  {8{8'hcc}};
+
+	#10
+
+	// add order 5/6
+	data_i =  {8{8'hdd}};
+
+	#10
+
+	// add order 6/6
+	data_i = { 'x, {3{8'hee}}};
+	len_i = 'd3;
+
+	#10
+
+	valid_i = 1'b0;
+	data_i = 'x;
+
+	// check results
 `ifdef DEBUG_ID
 	assert( debug_id_o == tb_debug_id );
 `endif
