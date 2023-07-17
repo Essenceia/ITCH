@@ -26,17 +26,11 @@ formal: tv_itch5.v
 formal_wave: 
 	${VIEW} ${FORMAL_DIR}/formal_basic/engine_0/trace.vcd ${WAVE_CONF}
 
-dec: tv_itch5_dec.v
-	iverilog ${FLAGS} -s tv_itch5_dec ${DEFINES} -o ${BUILD}/tv_itch5_dec ${UTILS_DIR}/len_to_mask.v tv_itch5_dec.v
+tv_itch5: tv_itch5.v
+	iverilog ${FLAGS} -s tv_itch5 ${DEFINES} -o ${BUILD}/tv_itch5 ${UTILS_DIR}/len_to_mask.v tv_itch5.v
 
-mux: tv_itch5_mux.v
-	iverilog ${FLAGS} -s tv_itch5_mux ${DEFINES} -o ${BUILD}/tv_itch5_mux tv_itch5_mux.v
-
-tv_itch5: dec tv_itch5.v mux
-	iverilog ${FLAGS} -s tv_itch5 ${DEFINES} -o ${BUILD}/tv_itch5 ${UTILS_DIR}/len_to_mask.v tv_itch5_dec.v tv_itch5_mux.v tv_itch5.v
-
-test: ${TB_DIR}/tv_itch5_tb.v tv_itch5.v mux dec
-	iverilog ${FLAGS} -s tv_itch5_tb ${DEFINES} -o ${BUILD}/tb tv_itch5.v ${UTILS_DIR}/len_to_mask.v tv_itch5_dec.v tv_itch5_mux.v ${TB_DIR}/tv_itch5_tb.v
+test: ${TB_DIR}/tv_itch5_tb.v tv_itch5
+	iverilog ${FLAGS} -s tv_itch5_tb ${DEFINES} -o ${BUILD}/tb ${UTILS_DIR}/len_to_mask.v tv_itch5.v ${TB_DIR}/tv_itch5_tb.v
 
 run: test
 	vvp ${BUILD}/tb

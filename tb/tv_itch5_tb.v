@@ -263,7 +263,7 @@ initial begin
 	nreset = 1'b1;
 	// start test
 	#10
-	valid_i     = 1'b1;
+	valid_i = 1'b1;
 	start_i = 1'b1;
 	`ifdef DEBUG_ID
 	tb_debug_id = { $random(), $random()};
@@ -322,7 +322,7 @@ initial begin
 	$finish;
 end
 
-tv_itch5_dec #( .LEN(LEN))
+tv_itch5 #( .LEN(LEN))
 m_uut(
 	.clk(clk),
 	.nreset(nreset),
