@@ -61,7 +61,7 @@ module tv_itch5 #(
     [ITCH decoded messages signals]
 ```
 
-### Mold message
+## Mold message data
 
 Mold message data driven by moldudp64 module.
 
@@ -73,10 +73,10 @@ Mold message data driven by moldudp64 module.
 
 - `data_i` : mold message data, aligned on 8 bytes.
 
-#### Overlap
+## Overlap of mold message data
 
-We call an overlap when data of 2 different mold messages are transfered within a same AXI
-payload. Overlap valid only occures on the begining of a new message so `ov_valid_i` implies 
+We call an overlap when data of 2 different mold messages are transferred within a same AXI
+payload. Overlap valid only occurs on the beginning of a new message so `ov_valid_i` implies 
 the start of a new mold message.
 
 - `ov_valid_i` : validity bit, new overlap mold message has been identified.
@@ -85,7 +85,7 @@ the start of a new mold message.
 
 - `ov_data_i`  : new overlapping mold message data, aligned on 8 bytes.
 
-##### Example 
+### Example 
 
 An AXI payload has a width of 8 bytes and each character denotes a byte,
 `A` are bytes belonging to the end of a mold message
@@ -109,7 +109,7 @@ start_i = 1'b0
 len_i   = 'd4
 data_i  = XXXXAAAA
 ```
-### ( Optional ) Debug id
+## ( Optional ) Debug id
 
 To help debugging, whenever the `DEBUG_ID` flag is set an new identification
 number will be attacked to each message.
@@ -117,7 +117,7 @@ number will be attacked to each message.
 This is used to keep track of individual itch messages in the top level
 test bench.
 
-By default `DEBUG_ID` should be not defined.
+By default `DEBUG_ID` is not defined.
 
 - `debug_id_i` : debug id tracking each new mold message, valid when `start_i` and 
     `valid_i` are set.
@@ -149,7 +149,7 @@ These interfaces all follow the same format :
 
 - `itch_<message_type>_<field_name>_o` : message field, fields are in big endian
 
-### ( Optional ) GLIMPSE
+## ( Optional ) GLIMPSE
 
 To add the `End of Snapshot` message present only in the GLIMPSE extension the
 `GLIMPSE` macro must be defined.
