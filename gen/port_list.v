@@ -193,12 +193,14 @@ output logic [4*LEN-1:0] itch_net_order_imbalance_indicator_current_reference_pr
 output logic [1*LEN-1:0] itch_net_order_imbalance_indicator_cross_type_o,
 output logic [1*LEN-1:0] itch_net_order_imbalance_indicator_price_variation_indicator_o,
 
+`ifdef GLIMPSE
 output logic itch_retail_price_improvement_indicator_v_o,
 output logic [2*LEN-1:0] itch_retail_price_improvement_indicator_stock_locate_o,
 output logic [2*LEN-1:0] itch_retail_price_improvement_indicator_tracking_number_o,
 output logic [6*LEN-1:0] itch_retail_price_improvement_indicator_timestamp_o,
 output logic [8*LEN-1:0] itch_retail_price_improvement_indicator_stock_o,
 output logic [1*LEN-1:0] itch_retail_price_improvement_indicator_interest_flag_o,
+`endif // GLIMPSE
 
 output logic itch_end_of_snapshot_v_o,
-output logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o,
+output logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o

@@ -199,6 +199,7 @@ assign itch_retail_price_improvement_indicator_tracking_number_early_lite_v_o = 
 assign itch_retail_price_improvement_indicator_timestamp_early_lite_v_o = data_cnt_q >= 'd11;
 assign itch_retail_price_improvement_indicator_stock_early_lite_v_o = data_cnt_q >= 'd19;
 assign itch_retail_price_improvement_indicator_interest_flag_early_lite_v_o = data_cnt_q >= 'd20;
-
+`ifdef GLIMPSE
 assign itch_end_of_snapshot_early_v_o = end_of_snapshot_lite_v & (data_cnt_q == 'd1);
 assign itch_end_of_snapshot_sequence_number_early_lite_v_o = data_cnt_q >= 'd21;
+`endif // GLIMPSE

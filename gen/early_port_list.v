@@ -199,6 +199,7 @@ output logic itch_retail_price_improvement_indicator_tracking_number_early_lite_
 output logic itch_retail_price_improvement_indicator_timestamp_early_lite_v_o,
 output logic itch_retail_price_improvement_indicator_stock_early_lite_v_o,
 output logic itch_retail_price_improvement_indicator_interest_flag_early_lite_v_o,
-
+`ifdef GLIMPSE
 output logic itch_end_of_snapshot_early_v_o,
 output logic itch_end_of_snapshot_sequence_number_early_lite_v_o,
+`endif // GLIMPSE

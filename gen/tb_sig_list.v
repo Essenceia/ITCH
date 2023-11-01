@@ -200,5 +200,7 @@ logic [6*LEN-1:0] itch_retail_price_improvement_indicator_timestamp_o;
 logic [8*LEN-1:0] itch_retail_price_improvement_indicator_stock_o;
 logic [1*LEN-1:0] itch_retail_price_improvement_indicator_interest_flag_o;
 
+`ifdef GLIMPSE
 logic itch_end_of_snapshot_v_o;
 logic [20*LEN-1:0] itch_end_of_snapshot_sequence_number_o;
+`endif

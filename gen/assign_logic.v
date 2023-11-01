@@ -243,8 +243,9 @@ assign itch_retail_price_improvement_indicator_tracking_number_o = data_q[LEN*3+
 assign itch_retail_price_improvement_indicator_timestamp_o = data_q[LEN*5+LEN*6-1:LEN*5];
 assign itch_retail_price_improvement_indicator_stock_o = data_q[LEN*11+LEN*8-1:LEN*11];
 assign itch_retail_price_improvement_indicator_interest_flag_o = data_q[LEN*19+LEN*1-1:LEN*19];
-
+`ifdef GLIMPSE
 logic end_of_snapshot_lite_v;
 assign end_of_snapshot_lite_v = (itch_msg_type == "G");
 assign itch_end_of_snapshot_v_o = end_of_snapshot_lite_v & (data_cnt_q == 'd21);
 assign itch_end_of_snapshot_sequence_number_o = data_q[LEN*1+LEN*20-1:LEN*1];
+`endif // GLIMPSE
